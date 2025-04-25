@@ -1,7 +1,7 @@
 kaboom({
   background: [0, 0, 0],
   width: 1300,
-  height: 2000,
+  height: 10000,
   scale: 1,
 });
 
