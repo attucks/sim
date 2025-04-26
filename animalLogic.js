@@ -44,14 +44,25 @@ if (a.mode === "wander") {
 
 if (a.stats.lifetime > goldAge) {
   a.color = rgb(255, 215, 0);
+
+  // 🛠 Add a badge if not already added
+  if (!a.hasBadge) {
+    const badge = add([
+      rect(5, 5),
+      pos(a.pos.x, a.pos.y - 8), // 8px above the animal
+      color(a.familyColor),
+      area(),
+      "badge",
+    ]);
+    a.badge = badge;
+    a.hasBadge = true;
+  }
 }
 
 
-
-  // Gold Age override
-  if (a.stats.lifetime > goldAge) {
-    a.color = rgb(255, 215, 0);
-  }
+if (a.badge) {
+  a.badge.pos = vec2(a.pos.x, a.pos.y - 8);
+}
 
   // Movement
   if (a.mode === "wander") {
