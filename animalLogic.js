@@ -1,37 +1,69 @@
 onUpdate("animal", (a) => {
   if (!a.alive) return;
 
+  // Update lifetime and hunger
   a.stats.lifetime += dt();
   a.hunger += dt() * hungerRate;
+
+  // Starvation tracking
   a.hunger > starvationThreshold ? a.hungerTime += dt() : a.hungerTime = 0;
   if (a.hungerTime > starvationTimeLimit) return killAnimal(a, "starvation");
 
-  if (a.target && !a.target.exists()) a.target = null, a.mode = "wander";
-  if (a.hunger > 3 && a.mode !== "hunt") a.mode = "hunt", findTarget(a);
-  if (a.hunger < 1) a.satedTime += dt(); else a.satedTime = 0;
-  if (a.satedTime > birthingTime) {
-    a.satedTime = 0;
-    a.stats.kids++;
-    a.text = a.firstName.toUpperCase();
-    spawnAnimal(a.pos.x + rand(-20, 20), a.pos.y + rand(-20, 20), a);
+  // Target handling
+  if (a.target && !a.target.exists()) {
+    a.target = null;
+    a.mode = "wander";
   }
 
-  a.mode === "wander" ? a.color = rgb(100, 255, 100) : a.mode === "hunt" ? a.color = rgb(255, 0, 0) : a.color = rgb(0, 0, 255);
-  if (a.stats.lifetime > goldAge) a.color = rgb(255, 215, 0);
+  // Greed-based hunting
+  if (a.hunger > (2 - a.greed) && a.mode !== "hunt") {   // <<<< FIXED greed math
+    a.mode = "hunt";
+    findTarget(a);
+  }
 
-  let moveSpeed = a.mode === "hunt" ? animalSpeed : animalSpeed * 0.5;
-  if (a.mode === "flee" && a.target) moveSpeed += 20;
-
-  if (a.mode === "flee" && a.target) {
-    const dir = a.pos.sub(a.target.pos).unit();
-    a.move(dir.scale(moveSpeed));
-  } else if (a.target) {
-    const dir = a.target.pos.sub(a.pos).unit();
-    a.move(dir.scale(moveSpeed));
+  // Birthing logic
+  if (a.hunger < 1) {
+    a.satedTime += dt();
   } else {
-    a.move(a.dir.scale(animalSpeed * 0.5));
+    a.satedTime = 0;
+  }
+if (a.satedTime > birthingTime) {
+  a.satedTime = 0;
+  a.stats.kids++;
+  a.text = a.firstName.toUpperCase();
+  const child = spawnAnimal(a.pos.x + rand(-20, 20), a.pos.y + rand(-20, 20), a);
+  addNews(`${a.firstName} birthed ${child.firstName}`);
+}
+
+  // Color based on mode
+  if (a.mode === "wander") {
+    a.color = rgb(100, 255, 100);
+  } else if (a.mode === "hunt") {
+    a.color = rgb(255, 0, 0);
+  } else if (a.mode === "flee") {
+    a.color = rgb(0, 0, 255);
   }
 
+  // Gold Age override
+  if (a.stats.lifetime > goldAge) {
+    a.color = rgb(255, 215, 0);
+  }
+
+  // Movement
+  if (a.mode === "wander") {
+    if (rand(1) < a.curiosity) {
+      a.move(a.dir.scale(animalSpeed * 0.5));
+    }
+    // else idle
+  } else if (a.mode === "flee" && a.target) {
+    const dir = a.pos.sub(a.target.pos).unit();
+    a.move(dir.scale(animalSpeed + 20));
+  } else if (a.mode === "hunt" && a.target) {
+    const dir = a.target.pos.sub(a.pos).unit();
+    a.move(dir.scale(animalSpeed));
+  }
+
+  // Repel from corpses
   for (const c of get("corpse")) {
     if (a.pos.dist(c.pos) < corpseRepelDistance) {
       const away = a.pos.sub(c.pos).unit();
@@ -39,6 +71,7 @@ onUpdate("animal", (a) => {
     }
   }
 
+  // Repel from barriers
   for (const b of get("barrier")) {
     if (a.pos.dist(b.pos) < barrierRepelDistance) {
       const away = a.pos.sub(b.pos).unit();
@@ -46,20 +79,34 @@ onUpdate("animal", (a) => {
     }
   }
 
-  if (a.pos.x < penX) a.pos.x = penX, a.mode === "wander" && (a.dir.x *= -1);
-  if (a.pos.x > penX + penWidth) a.pos.x = penX + penWidth, a.mode === "wander" && (a.dir.x *= -1);
-  if (a.pos.y < penY) a.pos.y = penY, a.mode === "wander" && (a.dir.y *= -1);
-  if (a.pos.y > penY + penHeight) a.pos.y = penY + penHeight, a.mode === "wander" && (a.dir.y *= -1);
+  // Border bouncing
+  if (a.pos.x < penX) {
+    a.pos.x = penX;
+    if (a.mode === "wander") a.dir.x *= -1;
+  }
+  if (a.pos.x > penX + penWidth) {
+    a.pos.x = penX + penWidth;
+    if (a.mode === "wander") a.dir.x *= -1;
+  }
+  if (a.pos.y < penY) {
+    a.pos.y = penY;
+    if (a.mode === "wander") a.dir.y *= -1;
+  }
+  if (a.pos.y > penY + penHeight) {
+    a.pos.y = penY + penHeight;
+    if (a.mode === "wander") a.dir.y *= -1;
+  }
 
-  if (a.stats.lifetime > goldAge && a.stats.kids > 0 && a.stats.kills > 0 && rand(1) < 0.005) {
-    const sx = Math.floor((a.pos.x - penX) / 10) * 10 + penX;
-    const sy = Math.floor((a.pos.y - penY) / 10) * 10 + penY;
-    const legacyBlock = add([rect(10, 10), pos(sx, sy), area(), color(255, 215, 0), outline(1), "barrier"]);
-    const legacyText = add([text(a.firstName + "x", { size: 6 }), pos(sx + 1, sy + 1), color(0, 0, 0)]);
-    a.legacyBarriers.push(legacyBlock);
+  // Legacy block generation (one time, based on traits)
+  const legacyChance = (a.territorial + a.legacyDesire) / 2;
+  if (a.stats.lifetime > goldAge && !a.hasLeftLegacy && rand(1) < legacyChance * 0.25) {
+    leaveLegacyBlock(a);
+    a.hasLeftLegacy = true;
   }
 });
 
+
+// Find target for hunting or attacking
 function findTarget(a) {
   const foods = get("food");
   const others = get("animal").filter(x => x !== a && x.alive);

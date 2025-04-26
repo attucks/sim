@@ -24,3 +24,4 @@ window.goldAge = 60;
 // Data tracking
 window.animalsStats = [];
 window.ancestorStats = [];
+window.newsFeed = [];

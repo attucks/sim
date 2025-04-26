@@ -9,3 +9,9 @@ function generateName() {
 function computeMagicNumber(a) {
   return (a.stats.lifetime + a.stats.kids + a.stats.foods + a.stats.kills) / 4;
 }
+function addNews(message) {
+  newsFeed.unshift(message); // add to the start
+  if (newsFeed.length > 20) {
+    newsFeed.pop(); // keep it to the last 20 entries
+  }
+}

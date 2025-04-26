@@ -13,4 +13,10 @@ onUpdate(() => {
 
   add([text(aliveInfo, { size: 12 }), pos(penX + penWidth + 10, penY), color(255, 255, 255), "statText"]);
   add([text(deadInfo, { size: 12 }), pos(penX + penWidth + 10, penY + 300), color(180, 180, 180), "statText"]);
+    add([
+    text(newsFeed.join("\n"), { size: 10 }),
+    pos(penX + penWidth + 10, penY + 600),
+    color(255, 255, 0),
+    "statText",
+  ]);
 });

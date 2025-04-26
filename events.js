@@ -7,6 +7,42 @@ onClick(() => {
   }
 });
 
+onCollide("animal", "animal", (a, b) => {
+  if (!a.alive || !b.alive) return;
+  if (a.target === b) {
+
+    // Each animal rolls against their bravery
+    if (rand(1) > a.bravery) {
+      a.mode = "flee";
+      a.target = b;
+      return; // a runs away, no fight
+    }
+    if (rand(1) > b.bravery) {
+      b.mode = "flee";
+      b.target = a;
+      return; // b runs away, no fight
+    }
+
+    // If both stand their ground → FIGHT
+    const aMagic = computeMagicNumber(a);
+    const bMagic = computeMagicNumber(b);
+    const totalMagic = aMagic + bMagic;
+    const chanceA = totalMagic > 0 ? aMagic / totalMagic : 0.5;
+
+if (rand(1) < chanceA) {
+  a.victims.push(b.firstName + (b.lastName ? " " + b.lastName : ""));
+  a.stats.kills++;
+  addNews(`${a.firstName} defeated ${b.firstName}`);
+  killAnimal(b);
+} else {
+  b.victims.push(a.firstName + (a.lastName ? " " + a.lastName : ""));
+  b.stats.kills++;
+  addNews(`${b.firstName} defeated ${a.firstName}`);
+  killAnimal(a);
+}
+
+  }
+});
 onCollide("animal", "food", (a, f) => {
   if (!a.alive) return;
   destroy(f);
@@ -16,20 +52,7 @@ onCollide("animal", "food", (a, f) => {
   a.stats.foods++;
 });
 
-onCollide("animal", "animal", (a, b) => {
-  if (!a.alive || !b.alive) return;
-  if (a.target === b) {
-    if (rand(1) < 0.5) {
-      a.victims.push(b.firstName + (b.lastName ? " " + b.lastName : ""));
-      a.stats.kills++;
-      killAnimal(b);
-    } else {
-      b.victims.push(a.firstName + (a.lastName ? " " + a.lastName : ""));
-      b.stats.kills++;
-      killAnimal(a);
-    }
-  }
-});
+
 
 onKeyPress("b", () => {
   const m = mousePos();
