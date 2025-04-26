@@ -24,6 +24,15 @@ onCollide("animal", "animal", (a, b) => {
       b.target = null;
       return;
     }
+    if (areRelatives(a, b)) {
+  // 🧬 Family detected — no fighting
+  a.mode = "wander";
+  b.mode = "wander";
+  a.target = null;
+  b.target = null;
+  return;
+}
+
 
     // (Normal fight bravery roll follows...)
     if (rand(1) > a.bravery) {

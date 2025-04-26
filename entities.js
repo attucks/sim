@@ -1,9 +1,12 @@
 function spawnAnimal(x = rand(penX + 40, penX + penWidth - 40), y = rand(penY + 40, penY + penHeight - 40), parent = null) {
   const name = generateName();
+  const familyLine = parent ? [...parent.familyLine, name] : [name];
+  const familyColor = parent ? parent.familyColor : rgb(rand(50, 255), rand(50, 255), rand(50, 255)); // 🔥 PURE rgb()
+
   const a = add([
     text(name.toLowerCase(), { size: 16 }),
     pos(x, y),
-    color(100, 255, 100),
+    color(familyColor), // 🔥 use it here correctly
     area(),
     "animal",
     {
@@ -14,7 +17,6 @@ function spawnAnimal(x = rand(penX + 40, penX + penWidth - 40), y = rand(penY + 
       target: null,
       alive: true,
       hungerTime: 0,
-lastLegacyTime: 0, // 🧱 when they last tried to leave a block
 
       firstName: name,
       lastName: parent ? parent.firstName + "z" : "",
@@ -23,14 +25,14 @@ lastLegacyTime: 0, // 🧱 when they last tried to leave a block
       victims: [],
       stats: { lifetime: 0, kids: 0, foods: 0, kills: 0 },
       legacyBarriers: [],
-
-      // 🧬 Intrinsic traits
+      familyLine,
+      familyColor, // 🧬 pure rgb() object
       bravery: rand(0.3, 1.0),
       curiosity: rand(0.3, 1.0),
       territorial: rand(0.3, 1.0),
       greed: rand(0.3, 1.0),
       legacyDesire: rand(0.3, 1.0),
-      hasLeftLegacy: false,
+      lastLegacyTime: 0,
     },
   ]);
 
@@ -38,6 +40,8 @@ lastLegacyTime: 0, // 🧱 when they last tried to leave a block
   if (parent) parent.offspring.push(name);
   return a;
 }
+
+
 
 function spawnFood() {
   return add([

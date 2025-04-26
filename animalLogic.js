@@ -34,15 +34,19 @@ if (a.satedTime > birthingTime) {
   const child = spawnAnimal(a.pos.x + rand(-20, 20), a.pos.y + rand(-20, 20), a);
   addNews(`${a.firstName} birthed ${child.firstName} ${child.lastName}`);
 }
+if (a.mode === "wander") {
+  a.color = scaleColor(a.familyColor, 1.0); 
+} else if (a.mode === "hunt") {
+  a.color = scaleColor(a.familyColor, 1.3); 
+} else if (a.mode === "flee") {
+  a.color = scaleColor(a.familyColor, 0.7); 
+}
 
-  // Color based on mode
-  if (a.mode === "wander") {
-    a.color = rgb(100, 255, 100);
-  } else if (a.mode === "hunt") {
-    a.color = rgb(255, 0, 0);
-  } else if (a.mode === "flee") {
-    a.color = rgb(0, 0, 255);
-  }
+if (a.stats.lifetime > goldAge) {
+  a.color = rgb(255, 215, 0);
+}
+
+
 
   // Gold Age override
   if (a.stats.lifetime > goldAge) {
@@ -128,19 +132,15 @@ function findTarget(a) {
     }
   }
 
-  for (const o of others) {
-    // 🧬 Skip relatives!
-    const sameParent = a.parentName && o.parentName && a.parentName === o.parentName;
-    const aIsParentOfO = o.parentName === a.firstName;
-    const oIsParentOfA = a.parentName === o.firstName;
-    if (sameParent || aIsParentOfO || oIsParentOfA) continue;
-
-    const dist = a.pos.dist(o.pos);
-    if (dist < preyDist) {
-      closestPrey = o;
-      preyDist = dist;
-    }
+for (const o of others) {
+  if (areRelatives(a, o)) continue; // 🧬 skip family
+  const dist = a.pos.dist(o.pos);
+  if (dist < preyDist) {
+    closestPrey = o;
+    preyDist = dist;
   }
+}
+
 
   if (closestFood && (!closestPrey || foodDist < preyDist)) {
     a.target = closestFood;
