@@ -8,9 +8,9 @@ window.penHeight = 560;
 
 // Speeds and gameplay mechanics
 window.animalSpeed = 40;
-window.spawnFoodInterval = 5;
+window.spawnFoodInterval = 2;
 window.foodHealAmount = 5;
-window.birthingTime = 7;
+window.birthingTime = 10;
 window.corpseLifetime = 22;
 window.corpseRepelDistance = 20;
 window.barrierRepelDistance = 20;
