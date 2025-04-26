@@ -129,6 +129,12 @@ function findTarget(a) {
   }
 
   for (const o of others) {
+    // 🧬 Skip relatives!
+    const sameParent = a.parentName && o.parentName && a.parentName === o.parentName;
+    const aIsParentOfO = o.parentName === a.firstName;
+    const oIsParentOfA = a.parentName === o.firstName;
+    if (sameParent || aIsParentOfO || oIsParentOfA) continue;
+
     const dist = a.pos.dist(o.pos);
     if (dist < preyDist) {
       closestPrey = o;
