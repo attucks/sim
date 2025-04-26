@@ -20,7 +20,7 @@ const barrierRepelDistance = 20;
 const hungerRate = 0.16;
 const starvationThreshold = 5;
 const starvationTimeLimit = 10;
-const goldAge = 150;
+const goldAge = 60;
 const barrierSize = vec2(10, 10);
 
 const animalsStats = [];
