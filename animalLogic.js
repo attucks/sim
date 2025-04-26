@@ -32,7 +32,7 @@ if (a.satedTime > birthingTime) {
   a.stats.kids++;
   a.text = a.firstName.toUpperCase();
   const child = spawnAnimal(a.pos.x + rand(-20, 20), a.pos.y + rand(-20, 20), a);
-  addNews(`${a.firstName} birthed ${child.firstName}`);
+  addNews(`${a.firstName} birthed ${child.firstName} ${child.lastName}`);
 }
 
   // Color based on mode
@@ -79,30 +79,34 @@ if (a.satedTime > birthingTime) {
     }
   }
 
-  // Border bouncing
-  if (a.pos.x < penX) {
-    a.pos.x = penX;
-    if (a.mode === "wander") a.dir.x *= -1;
-  }
-  if (a.pos.x > penX + penWidth) {
-    a.pos.x = penX + penWidth;
-    if (a.mode === "wander") a.dir.x *= -1;
-  }
-  if (a.pos.y < penY) {
-    a.pos.y = penY;
-    if (a.mode === "wander") a.dir.y *= -1;
-  }
-  if (a.pos.y > penY + penHeight) {
-    a.pos.y = penY + penHeight;
-    if (a.mode === "wander") a.dir.y *= -1;
-  }
+const boundsMargin = 5; // 5px margin to avoid clipping
+
+if (a.pos.x < penX + boundsMargin) {
+  a.pos.x = penX + boundsMargin;
+  if (a.mode === "wander") a.dir.x *= -1;
+}
+if (a.pos.x > penX + penWidth - boundsMargin) {
+  a.pos.x = penX + penWidth - boundsMargin;
+  if (a.mode === "wander") a.dir.x *= -1;
+}
+if (a.pos.y < penY + boundsMargin) {
+  a.pos.y = penY + boundsMargin;
+  if (a.mode === "wander") a.dir.y *= -1;
+}
+if (a.pos.y > penY + penHeight - boundsMargin) {
+  a.pos.y = penY + penHeight - boundsMargin;
+  if (a.mode === "wander") a.dir.y *= -1;
+}
+
 
   // Legacy block generation (one time, based on traits)
-  const legacyChance = (a.territorial + a.legacyDesire) / 2;
-  if (a.stats.lifetime > goldAge && !a.hasLeftLegacy && rand(1) < legacyChance * 0.25) {
-    leaveLegacyBlock(a);
-    a.hasLeftLegacy = true;
-  }
+// Legacy block creation every 60 seconds after goldAge
+const legacyChance = (a.territorial + a.legacyDesire) / 2;
+if (a.stats.lifetime > goldAge && a.stats.lifetime - a.lastLegacyTime > 60 && rand(1) < legacyChance * 0.5) {
+  leaveLegacyBlock(a);
+  a.lastLegacyTime = a.stats.lifetime; // Update the time they last left a legacy
+}
+
 });
 
 

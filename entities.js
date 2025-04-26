@@ -14,6 +14,7 @@ function spawnAnimal(x = rand(penX + 40, penX + penWidth - 40), y = rand(penY + 
       target: null,
       alive: true,
       hungerTime: 0,
+lastLegacyTime: 0, // 🧱 when they last tried to leave a block
 
       firstName: name,
       lastName: parent ? parent.firstName + "z" : "",

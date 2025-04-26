@@ -32,12 +32,12 @@ onCollide("animal", "animal", (a, b) => {
 if (rand(1) < chanceA) {
   a.victims.push(b.firstName + (b.lastName ? " " + b.lastName : ""));
   a.stats.kills++;
-  addNews(`${a.firstName} defeated ${b.firstName}`);
+  addNews(`${a.firstName} ${a.lastName} defeated ${b.firstName} ${b.lastName}`);
   killAnimal(b);
 } else {
   b.victims.push(a.firstName + (a.lastName ? " " + a.lastName : ""));
   b.stats.kills++;
-  addNews(`${b.firstName} defeated ${a.firstName}`);
+  addNews(`${b.firstName} ${b.lastName} defeated ${a.firstName} ${a.lastName} `);
   killAnimal(a);
 }
 
