@@ -1,29 +1,65 @@
 onUpdate(() => {
-  destroyAll("statText");
 
-  let aliveInfo = "ALIVE\n #  Name     Parent   Kids         L  K  F  D  M  Victims\n";
-  animalsStats.forEach((a, i) => {
-    aliveInfo += `${(i + 1).toString().padStart(2, ' ')}  ${(a.firstName + " " + (a.lastName || "")).padEnd(8, ' ')} ${(a.parentName || "None").padEnd(7, ' ')} ${(a.offspring.length ? a.offspring.join(",") : "-").padEnd(10, ' ')} ${a.stats.lifetime.toFixed(0).padStart(2, ' ')} ${a.stats.kids.toString().padStart(2, ' ')} ${a.stats.foods.toString().padStart(2, ' ')} ${a.stats.kills.toString().padStart(2, ' ')} ${computeMagicNumber(a).toFixed(1).padStart(4, ' ')}  ${(a.victims.length ? a.victims.join(",") : "-")}\n`;
-  });
-
-  let deadInfo = "ANCESTORS\n #  Name     Parent   Kids         L  K  F  D  M  Victims\n";
-  ancestorStats.forEach((a, i) => {
-    deadInfo += `${(i + 1).toString().padStart(2, ' ')}  ${(a.name || "").padEnd(8, ' ')} ${(a.parent || "None").padEnd(7, ' ')} ${(a.offspring.length ? a.offspring.join(",") : "-").padEnd(10, ' ')} ${a.lifetime.toString().padStart(2, ' ')} ${a.kids.toString().padStart(2, ' ')} ${a.foods.toString().padStart(2, ' ')} ${a.kills.toString().padStart(2, ' ')} ${a.magic.toString().padStart(4, ' ')}  ${(a.victims.length ? a.victims.join(",") : "-")}\n`;
-  });
-
-  add([text(aliveInfo, { size: 12 }), pos(penX + penWidth + 10, penY), color(255, 255, 255), "statText"]);
-  add([text(deadInfo, { size: 12 }), pos(penX + penWidth + 10, penY + 300), color(180, 180, 180), "statText"]);
-add([
-  text(newsFeed.join("\n"), { size: 10 }),
-  pos(penX, penY + penHeight + 10), // ✅ start right below the bottom of the pen
-  color(255, 255, 0),
-  "statText",
-]);
-
-});
 add([
     text(`Build: ${buildTime}`, { size: 12 }),
     pos(10, 580), // Bottom-left corner, adjust if needed
    // layer("ui"),
     fixed(),
 ]);
+function updateStatsUI() {
+  let html = "";
+
+  // Alive Animals Table
+  html += `<table border="1" cellpadding="4" cellspacing="0" style="border-collapse: collapse; width: 100%;">`;
+  html += `<thead><tr style="background-color: darkgreen;">`;
+  html += `<th>#</th><th>Name</th><th>Parent</th><th>Kids</th><th>L</th><th>K</th><th>F</th><th>D</th><th>M</th><th>Victims</th>`;
+  html += `</tr></thead><tbody>`;
+
+  animalsStats.forEach((a, i) => {
+    html += `<tr>`;
+    html += `<td>${i + 1}</td>`;
+    html += `<td>${a.firstName} ${(a.lastName || "")}</td>`;
+    html += `<td>${a.parentName || "None"}</td>`;
+    html += `<td>${(a.offspring && a.offspring.length) ? a.offspring.join(", ") : "-"}</td>`;
+    html += `<td>${a.stats.lifetime.toFixed(0)}</td>`;
+    html += `<td>${a.stats.kids}</td>`;
+    html += `<td>${a.stats.foods}</td>`;
+    html += `<td>${a.stats.kills}</td>`;
+    html += `<td>${computeMagicNumber(a).toFixed(1)}</td>`;
+    html += `<td>${(a.victims && a.victims.length) ? a.victims.join(", ") : "-"}</td>`;
+    html += `</tr>`;
+  });
+
+  html += `</tbody></table><br>`;
+
+  // Dead Animals Table
+  html += `<table border="1" cellpadding="4" cellspacing="0" style="border-collapse: collapse; width: 100%;">`;
+  html += `<thead><tr style="background-color: darkred;">`;
+  html += `<th>#</th><th>Name</th><th>Parent</th><th>Kids</th><th>L</th><th>K</th><th>F</th><th>D</th><th>M</th><th>Victims</th>`;
+  html += `</tr></thead><tbody>`;
+
+ancestorStats.forEach((a, i) => {
+  html += `<tr>`;
+  html += `<td>${i + 1}</td>`;
+  html += `<td>${a.name || ""}</td>`;
+  html += `<td>${a.parent || "None"}</td>`;
+  html += `<td>${(a.offspring && a.offspring.length) ? a.offspring.join(", ") : "-"}</td>`;
+  html += `<td>${a.lifetime ?? "-"}</td>`;
+  html += `<td>${a.kids ?? "-"}</td>`;
+  html += `<td>${a.foods ?? "-"}</td>`;
+  html += `<td>${a.kills ?? "-"}</td>`;
+  html += `<td>${(typeof a.magic === "number" ? a.magic.toFixed(1) : "-")}</td>`; // ✅ Correct
+  html += `<td>${(a.victims && a.victims.length) ? a.victims.join(", ") : "-"}</td>`;
+  html += `</tr>`;
+});
+
+
+  html += `</tbody></table>`;
+
+  // Inject into stats div
+  document.getElementById("stats").innerHTML = html;
+}
+
+
+setInterval(updateStatsUI, 1000); // update every second
+})

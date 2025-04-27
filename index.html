@@ -1,10 +1,43 @@
-<body>
-<div>Click to add food. B to add Barrier. X to remove barrier.</div>
+<body style="margin: 0; background: black; color: lime; font-family: monospace;">
 
-<!-- Load kaboom immediately -->
+<div id="game-container" style="display: flex; align-items: flex-start;">
+
+  <!-- Kaboom will inject the canvas here -->
+  <div id="kaboom-canvas" style="flex-shrink: 0;"></div>
+
+  <!-- Your stats div -->
+  <div id="stats" style="
+    margin-left: 20px;
+    width: 600px;
+    height: 600px;
+    overflow-y: scroll;
+    background-color: black;
+    color: lime;
+    font-family: monospace;
+    font-size: 12px;
+    padding: 10px;
+    border: 2px solid lime;
+    flex-shrink: 0;
+  ">
+    Loading stats...
+  </div>
+
+</div>
+
 <script src="https://unpkg.com/kaboom/dist/kaboom.js"></script>
-<script src="https://unpkg.com/kaboom/dist/kaboom.js"></script>
-<script src="kaboom-init.js"></script>
+<script>
+  kaboom({
+    background: [0, 0, 0],
+    width: 800,
+    height: 600,
+    scale: 1,
+    root: document.getElementById("kaboom-canvas"), // 👈 Tell Kaboom where to put the canvas
+  });
+
+  window.barrierSize = vec2(10, 10);
+</script>
+
+<!-- Your other scripts -->
 <script src="constants.js"></script>
 <script src="utils.js"></script>
 <script src="entities.js"></script>
@@ -12,8 +45,5 @@
 <script src="events.js"></script>
 <script src="ui.js"></script>
 <script src="main.js"></script>
-
-
-
 
 </body>
