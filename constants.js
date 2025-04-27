@@ -1,5 +1,5 @@
 // constants.js
-
+window.buildTime = new Date().toLocaleString();
 // Pen dimensions
 window.penX = 20;
 window.penY = 20;
