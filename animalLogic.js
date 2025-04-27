@@ -202,6 +202,8 @@ if (a.readyToBirth && a.hunger > birthingHungerThreshold) {
       a.currentDirection = "front";
     }
   }
+  clampToPen(a);
+
 });
 
 
