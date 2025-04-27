@@ -1,5 +1,6 @@
 // main.js
 import { solid } from "kaboom";
+window.buildTime = new Date().toLocaleString();
 
 // barrierSize needs kaboom() first, so we set it now:
 window.barrierSize = vec2(10, 10);
