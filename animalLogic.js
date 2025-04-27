@@ -31,7 +31,7 @@ if (a.mode === "wander") {
 }
 
 if (a.stats.lifetime > goldAge) {
-  a.color = rgb(255, 215, 0);
+ // a.color = rgb(255, 215, 0);
 
   // 🛠 Add a badge if not already added
   if (!a.hasBadge) {
