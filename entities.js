@@ -5,7 +5,7 @@ function spawnAnimal(x = rand(penX + 40, penX + penWidth - 40), y = rand(penY + 
 
 const a = add([
   sprite("creatureFront"), // Attach sprite ONCE
-  scale(1.2), // or whatever size you like
+  scale(1.5), // or whatever size you like
   pos(x, y),
   color(familyColor),
   area(),
