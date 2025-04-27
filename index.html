@@ -1,36 +1,55 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Sim</title>
-  <style>
-    body { margin: 0; background: black; color: #0f0; }
-  </style>
-</head>
 <body>
-<div> Click to add food. B to add Barrier. X to remove barrier.</div>
+<div>Click to add food. B to add Barrier. X to remove barrier.</div>
+
 <script src="https://unpkg.com/kaboom/dist/kaboom.js"></script>
 
 <script>
-// 👇 immediately call kaboom() here
+// === kaboom initialization ===
 kaboom({
   background: [0, 0, 0],
   width: 1800,
   height: 10000,
   scale: 1,
-   plugins: [solid()], // ✅ <-- ADD solid here if using the plugins system
 });
 
-// 👇 immediately create barrierSize now that vec2 exists
+// Now kaboom is ready, so barrierSize can be defined
 window.barrierSize = vec2(10, 10);
-</script>
 
-<script src="constants.js" defer></script>
-<script src="utils.js" defer></script>
-<script src="entities.js" defer></script>
-<script src="animalLogic.js" defer></script>
-<script src="events.js" defer></script>
-<script src="ui.js" defer></script>
-<script src="main.js" defer></script>
+// === Load all your other scripts manually inside a function ===
+function startGame() {
+  // you can also loadSprites here if needed
+
+  // Now load your constants
+  const scriptConstants = document.createElement('script');
+  scriptConstants.src = "constants.js";
+  document.body.appendChild(scriptConstants);
+
+  const scriptUtils = document.createElement('script');
+  scriptUtils.src = "utils.js";
+  document.body.appendChild(scriptUtils);
+
+  const scriptEntities = document.createElement('script');
+  scriptEntities.src = "entities.js";
+  document.body.appendChild(scriptEntities);
+
+  const scriptAnimalLogic = document.createElement('script');
+  scriptAnimalLogic.src = "animalLogic.js";
+  document.body.appendChild(scriptAnimalLogic);
+
+  const scriptEvents = document.createElement('script');
+  scriptEvents.src = "events.js";
+  document.body.appendChild(scriptEvents);
+
+  const scriptUI = document.createElement('script');
+  scriptUI.src = "ui.js";
+  document.body.appendChild(scriptUI);
+
+  const scriptMain = document.createElement('script');
+  scriptMain.src = "main.js";
+  document.body.appendChild(scriptMain);
+}
+
+// When everything has loaded, THEN start the game
+window.addEventListener("load", startGame);
+</script>
 </body>
-</html>
