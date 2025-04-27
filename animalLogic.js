@@ -16,7 +16,7 @@ onUpdate("animal", (a) => {
   }
 
   // Greed-based hunting
-  if (a.hunger > (2 - a.greed) && a.mode !== "hunt") {   // <<<< FIXED greed math
+  if (a.hunger > (4 - a.greed) && a.mode !== "hunt") {   // <<<< FIXED greed math
     a.mode = "hunt";
     findTarget(a);
   }
