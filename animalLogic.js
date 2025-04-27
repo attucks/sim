@@ -105,6 +105,42 @@ if (Math.abs(a.dir.x) > Math.abs(a.dir.y)) {
 
 
 
+const allies = get("animal").filter(o => o !== a && areRelatives(a, o) && o.alive);
+const enemies = get("animal").filter(o => o !== a && !areRelatives(a, o) && o.alive);
+
+if (allies.length > 0) {
+  const nearestAlly = allies.reduce((closest, ally) => 
+    a.pos.dist(ally.pos) < a.pos.dist(closest.pos) ? ally : closest, allies[0]
+  );
+
+  const distToAlly = a.pos.dist(nearestAlly.pos);
+  
+  if (distToAlly > 30) { // 🧠 Too far from family
+    const toward = nearestAlly.pos.sub(a.pos).unit();
+    a.move(toward.scale(animalSpeed * 0.4)); // drift toward family
+  }
+}
+
+if (enemies.length > 0) {
+  const nearestEnemy = enemies.reduce((closest, enemy) => 
+    a.pos.dist(enemy.pos) < a.pos.dist(closest.pos) ? enemy : closest, enemies[0]
+  );
+
+  const distToEnemy = a.pos.dist(nearestEnemy.pos);
+
+  if (distToEnemy < 100) { // 👀 Enemy within danger zone
+    const away = a.pos.sub(nearestEnemy.pos).unit();
+    a.move(away.scale(animalSpeed * 0.5)); // back off a little
+  }
+}
+for (const o of allies) {
+  if (o.mode === "flee" && o.target && !areRelatives(a, o.target)) {
+    // My family member is being chased
+    a.mode = "hunt";
+    a.target = o.target;
+    break;
+  }
+}
 
 const boundsMargin = 5; // 5px margin to avoid clipping
 
