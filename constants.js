@@ -1,5 +1,5 @@
 // constants.js
-window.buildTime = "v3"; // Set to your local time when you update
+window.buildTime = "v3.1"; // Set to your local time when you update
 
 // Pen dimensions
 window.penX = 20;
