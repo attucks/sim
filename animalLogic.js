@@ -136,7 +136,7 @@ if (a.pos.y > penY + penHeight - boundsMargin) {
   // Legacy block generation (one time, based on traits)
 // Legacy block creation every 60 seconds after goldAge
 const legacyChance = (a.territorial + a.legacyDesire) / 2;
-if (a.stats.lifetime > goldAge && a.stats.lifetime - a.lastLegacyTime > 120 && rand(1) < legacyChance * 0.5) {
+if (a.stats.lifetime > goldAge && a.stats.lifetime - a.lastLegacyTime > 30 && rand(1) < legacyChance * 0.5) {
   leaveLegacyBlock(a);
   a.lastLegacyTime = a.stats.lifetime; // Update the time they last left a legacy
 }
