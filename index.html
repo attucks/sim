@@ -1,10 +1,10 @@
 <body>
 <div>Click to add food. B to add Barrier. X to remove barrier.</div>
 
+<!-- Load kaboom immediately -->
 <script src="https://unpkg.com/kaboom/dist/kaboom.js"></script>
-
 <script>
-// === kaboom initialization ===
+// Initialize kaboom immediately
 kaboom({
   background: [0, 0, 0],
   width: 1800,
@@ -12,44 +12,16 @@ kaboom({
   scale: 1,
 });
 
-// Now kaboom is ready, so barrierSize can be defined
+// Now that kaboom exists, set globals
 window.barrierSize = vec2(10, 10);
-
-// === Load all your other scripts manually inside a function ===
-function startGame() {
-  // you can also loadSprites here if needed
-
-  // Now load your constants
-  const scriptConstants = document.createElement('script');
-  scriptConstants.src = "constants.js";
-  document.body.appendChild(scriptConstants);
-
-  const scriptUtils = document.createElement('script');
-  scriptUtils.src = "utils.js";
-  document.body.appendChild(scriptUtils);
-
-  const scriptEntities = document.createElement('script');
-  scriptEntities.src = "entities.js";
-  document.body.appendChild(scriptEntities);
-
-  const scriptAnimalLogic = document.createElement('script');
-  scriptAnimalLogic.src = "animalLogic.js";
-  document.body.appendChild(scriptAnimalLogic);
-
-  const scriptEvents = document.createElement('script');
-  scriptEvents.src = "events.js";
-  document.body.appendChild(scriptEvents);
-
-  const scriptUI = document.createElement('script');
-  scriptUI.src = "ui.js";
-  document.body.appendChild(scriptUI);
-
-  const scriptMain = document.createElement('script');
-  scriptMain.src = "main.js";
-  document.body.appendChild(scriptMain);
-}
-
-// When everything has loaded, THEN start the game
-window.addEventListener("load", startGame);
 </script>
+
+<!-- Load your game files in order -->
+<script src="constants.js"></script>
+<script src="utils.js"></script>
+<script src="entities.js"></script>
+<script src="animalLogic.js"></script>
+<script src="events.js"></script>
+<script src="ui.js"></script> <!-- 🧠 ui.js must load before -->
+<script src="main.js"></script> <!-- 🧠 main.js must load last -->
 </body>
