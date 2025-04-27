@@ -84,7 +84,7 @@ onKeyPress("b", () => {
     if (!get("barrier").find(b => Math.abs(b.pos.x - sx) < 1 && Math.abs(b.pos.y - sy) < 1)) {
      add([
     rect(10, 10),
-    pos(x, y),
+    pos(sx, sy),
     color(255, 255, 255),
     area(),
     solid(),
