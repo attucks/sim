@@ -124,14 +124,18 @@ function leaveLegacyBlock(a) {
   const sy = Math.floor((a.pos.y - penY) / 10) * 10 + penY;
   addNews(`${a.firstName} left a legacy`);
 
-  const legacyBlock = add([
-    rect(10, 10),
-    pos(sx, sy),
-    area(),
-    color(a.familyColor), // ✅ USE familyColor directly
-    outline(1),
-    "barrier",
-  ]);
+const legacyBlock = add([
+  rect(10, 10),
+  pos(sx, sy),
+  area(),
+  color(a.familyColor),
+  outline(1),
+  "barrier",
+  {
+    familyColor: a.familyColor, // ✅ Track owner family
+  }
+]);
+
 
   a.legacyBarriers.push(legacyBlock);
 

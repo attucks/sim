@@ -140,6 +140,29 @@ if (a.stats.lifetime > goldAge && a.stats.lifetime - a.lastLegacyTime > 120 && r
   leaveLegacyBlock(a);
   a.lastLegacyTime = a.stats.lifetime; // Update the time they last left a legacy
 }
+
+for (const b of get("barrier")) {
+  const dist = a.pos.dist(b.pos);
+  
+  if (dist < barrierRepelDistance) {
+    // Same family → avoid but not destroy
+    if (colorsMatch(a.familyColor, b.familyColor)) {
+      const away = a.pos.sub(b.pos).unit();
+      a.move(away.scale(animalSpeed * 0.3)); // slower avoidance
+    } else {
+      // Different family → maybe destroy if territorial enough
+      if (rand(1) < a.territorial * 0.05) { // 5% chance per frame * territorial strength
+        destroy(b);
+        addNews(`${a.firstName} destroyed a rival legacy!`);
+      } else {
+        // Otherwise avoid
+        const away = a.pos.sub(b.pos).unit();
+        a.move(away.scale(animalSpeed * 0.5));
+      }
+    }
+  }
+}
+
 // Do all your updates first (movement, hunger, target finding, sprite switching, etc)
 // Then...
 if (a.hunger < 1) {
