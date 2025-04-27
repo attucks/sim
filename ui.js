@@ -24,6 +24,6 @@ add([
 add([
     text(`Build: ${buildTime}`, { size: 12 }),
     pos(10, 580), // Bottom-left corner, adjust if needed
-    layer("ui"),
+   // layer("ui"),
     fixed(),
 ]);
