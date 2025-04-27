@@ -6,7 +6,7 @@ onUpdate("animal", (a) => {
   const enemies = get("animal").filter(o => o !== a && !areRelatives(a, o) && o.alive);
 
   // === PACK DETECTION ===
-  if (allies.length >= 2) {
+  if (allies.length >= 6) {
     a.packMode = true;
   } else {
     a.packMode = false;
