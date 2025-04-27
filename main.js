@@ -22,4 +22,4 @@ for (let i = 0; i < 5; i++) {
 }
 
 // Now setup the UI
-setupUI();
+//setupUI();
