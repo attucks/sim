@@ -3,25 +3,17 @@
 
 <!-- Load kaboom immediately -->
 <script src="https://unpkg.com/kaboom/dist/kaboom.js"></script>
-<script>
-// Initialize kaboom immediately
-kaboom({
-  background: [0, 0, 0],
-  width: 1800,
-  height: 10000,
-  scale: 1,
-});
-
-// Now that kaboom exists, set globals
-window.barrierSize = vec2(10, 10);
-</script>
-
-<!-- Load your game files in order -->
+<script src="https://unpkg.com/kaboom/dist/kaboom.js"></script>
+<script src="kaboom-init.js"></script>
 <script src="constants.js"></script>
 <script src="utils.js"></script>
 <script src="entities.js"></script>
 <script src="animalLogic.js"></script>
 <script src="events.js"></script>
-<script src="ui.js"></script> <!-- 🧠 ui.js must load before -->
-<script src="main.js"></script> <!-- 🧠 main.js must load last -->
+<script src="ui.js"></script>
+<script src="main.js"></script>
+
+
+
+
 </body>
