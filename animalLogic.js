@@ -20,7 +20,11 @@ onUpdate("animal", (a) => {
     a.mode = "hunt";
     findTarget(a);
   }
-
+if (a.hunger < 1) {
+  a.satedTime += dt();
+} else {
+  a.satedTime = 0;
+}
   // Birthing logic
 if (a.satedTime > birthingTime) {
   a.satedTime = 0;
