@@ -20,20 +20,6 @@ onUpdate("animal", (a) => {
     a.mode = "hunt";
     findTarget(a);
   }
-if (a.hunger < 1) {
-  a.satedTime += dt();
-} else {
-  a.satedTime = 0;
-}
-
-// Birth
-if (a.satedTime > birthingTime && a.hunger < 1) { // ✅ must still be full
-  a.satedTime = 0;
-  a.stats.kids++;
-
-  const child = spawnAnimal(a.pos.x + rand(-20, 20), a.pos.y + rand(-20, 20), a);
-  addNews(`${a.firstName} birthed ${child.firstName} ${child.lastName}`);
-}
 
 
 if (a.mode === "wander") {
@@ -154,6 +140,23 @@ if (a.stats.lifetime > goldAge && a.stats.lifetime - a.lastLegacyTime > 60 && ra
   leaveLegacyBlock(a);
   a.lastLegacyTime = a.stats.lifetime; // Update the time they last left a legacy
 }
+// Do all your updates first (movement, hunger, target finding, sprite switching, etc)
+// Then...
+if (a.hunger < 1) {
+  a.satedTime += dt();
+} else {
+  a.satedTime = 0;
+}
+
+// THEN check for birth
+if (a.satedTime > birthingTime && a.hunger < 1) {
+  a.satedTime = 0;
+  a.stats.kids++;
+
+  const child = spawnAnimal(a.pos.x + rand(-20, 20), a.pos.y + rand(-20, 20), a);
+  addNews(`${a.firstName} birthed ${child.firstName} ${child.lastName}`);
+}
+
 
 });
 
