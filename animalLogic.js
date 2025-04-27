@@ -105,13 +105,6 @@ if (Math.abs(a.dir.x) > Math.abs(a.dir.y)) {
 
 
 
-  // Repel from barriers
-  for (const b of get("barrier")) {
-    if (a.pos.dist(b.pos) < barrierRepelDistance) {
-      const away = a.pos.sub(b.pos).unit();
-      a.move(away.scale(animalSpeed * 0.5));
-    }
-  }
 
 const boundsMargin = 5; // 5px margin to avoid clipping
 
@@ -143,25 +136,25 @@ if (a.stats.lifetime > goldAge && a.stats.lifetime - a.lastLegacyTime > 30 && ra
 
 for (const b of get("barrier")) {
   const dist = a.pos.dist(b.pos);
-  
-  if (dist < barrierRepelDistance) {
-    // Same family → avoid but not destroy
+
+  if (dist < 20) { // 20px distance — they must be CLOSE
     if (colorsMatch(a.familyColor, b.familyColor)) {
+      // Own family: soft avoid
       const away = a.pos.sub(b.pos).unit();
-      a.move(away.scale(animalSpeed * 0.3)); // slower avoidance
+      a.move(away.scale(animalSpeed * 0.3));
     } else {
-      // Different family → maybe destroy if territorial enough
-      if (rand(1) < a.territorial * 0.05) { // 5% chance per frame * territorial strength
+      // Enemy family
+      if (rand(1) < a.territorial * 0.3) { // <<< BOOST chance dramatically!
         destroy(b);
-        addNews(`${a.firstName} destroyed a rival legacy!`);
+        addNews(`${a.firstName} destroyed a legacy of ${b.creatorName || "unknown"}!`);
       } else {
-        // Otherwise avoid
         const away = a.pos.sub(b.pos).unit();
-        a.move(away.scale(animalSpeed * 0.5));
+        a.move(away.scale(animalSpeed * 0.7));
       }
     }
   }
 }
+
 
 // Do all your updates first (movement, hunger, target finding, sprite switching, etc)
 // Then...
