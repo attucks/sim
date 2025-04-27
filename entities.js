@@ -103,11 +103,11 @@ function spawnCorpse(x, y, cause = "normal") {
   ]);
   wait(corpseLifetime, () => destroy(c));
 }
-
 function killAnimal(a, cause = "normal") {
   a.alive = false;
   a.text = cause === "starvation" ? "☠️" : "☠️";
   a.color = rgb(255, 255, 255);
+
   spawnCorpse(a.pos.x, a.pos.y, cause);
 
   for (const barrier of a.legacyBarriers) destroy(barrier);
@@ -116,19 +116,23 @@ function killAnimal(a, cause = "normal") {
     symbol: a.text,
     name: `${a.firstName} ${a.lastName}`,
     parent: a.parentName || "--",
-    offspring: [...a.offspring],
+    offspring: [...(a.offspring || [])],
     lifetime: a.stats.lifetime.toFixed(1),
     kids: a.stats.kids,
     foods: a.stats.foods,
     kills: a.stats.kills,
     magic: computeMagicNumber(a).toFixed(1),
-    victims: [...a.victims],
+    victims: [...(a.victims || [])],
   });
 
-  const idx = animalsStats.indexOf(a);
-  if (idx !== -1) animalsStats.splice(idx, 1);
+  // 🛠 Correctly remove from animalsStats
+  animalsStats = animalsStats.filter(s =>
+    !(s.firstName === a.firstName && s.lastName === a.lastName)
+  );
+
   destroy(a);
 }
+
 
 function generateLegacyColor(firstName, lastName) {
   let hash = 0;
