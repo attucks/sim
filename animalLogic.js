@@ -137,19 +137,25 @@ else if (a.mode === "wander") {
     }
   }
 
-  // === BIRTH LOGIC ===
-  if (a.hunger < 1) {
+// === BIRTH LOGIC ===
+if (a.hunger < 1) {
     a.satedTime += dt();
-  } else {
+} else {
     a.satedTime = 0;
-  }
+}
 
-  if (a.satedTime > birthingTime && a.hunger < 1) {
-    a.satedTime = 0;
-    a.stats.kids++;
-    const child = spawnAnimal(a.pos.x + rand(-20, 20), a.pos.y + rand(-20, 20), a);
-    addNews(`${a.firstName} birthed ${child.firstName} ${child.lastName}`);
-  }
+// Check if ready to birth and well-fed
+if (a.readyToBirth && a.hunger > birthingHungerThreshold) {
+    if (get("animal").length < maxPopulation) {
+        spawnAnimal(a);
+        a.readyToBirth = false;
+        a.birthTimer = 0;
+    } else {
+        // Population too high, don't birth yet
+        a.birthTimer = 0; // Reset birth timer so they have to get ready again
+    }
+}
+
 
   // === BORDER CHECKING ===
   const boundsMargin = 5;
