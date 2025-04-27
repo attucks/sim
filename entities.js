@@ -122,22 +122,21 @@ function generateLegacyColor(firstName, lastName) {
 function leaveLegacyBlock(a) {
   const sx = Math.floor((a.pos.x - penX) / 10) * 10 + penX;
   const sy = Math.floor((a.pos.y - penY) / 10) * 10 + penY;
-  const legacyColor = generateLegacyColor(a.firstName, a.lastName);
-addNews(`${a.firstName} left a legacy`);
-  // Create the legacy block
+  addNews(`${a.firstName} left a legacy`);
+
   const legacyBlock = add([
     rect(10, 10),
     pos(sx, sy),
     area(),
-    color(legacyColor),
+    color(a.familyColor), // ✅ USE familyColor directly
     outline(1),
     "barrier",
   ]);
 
   a.legacyBarriers.push(legacyBlock);
 
-  // 🌱 New: Spawn some food around it!
-  for (let i = 0; i < 3; i++) { // spawn 3 food pieces around
+  // Spawn food around it
+  for (let i = 0; i < 3; i++) {
     const offsetX = rand(-30, 30);
     const offsetY = rand(-30, 30);
     const fx = clamp(sx + offsetX, penX + 10, penX + penWidth - 10);
@@ -147,8 +146,7 @@ addNews(`${a.firstName} left a legacy`);
       pos(fx, fy),
       color(255, 165, 0),
       area(),
-      "food"
+      "food",
     ]);
   }
 }
-
