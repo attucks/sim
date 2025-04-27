@@ -46,3 +46,7 @@ function clampToPen(entity) {
   }
 }
 
+function familyColorToCSS(color) {
+  if (!color) return "white";
+  return `rgb(${color.r ?? 255}, ${color.g ?? 255}, ${color.b ?? 255})`;
+}
