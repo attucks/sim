@@ -86,7 +86,7 @@ function spawnCorpse(x, y, cause = "normal") {
 function killAnimal(a, cause = "normal") {
   a.alive = false;
   a.text = cause === "starvation" ? "☠️" : "☠️";
-  a.color = rgb(50, 50, 50);
+  a.color = rgb(255, 255, 255);
   spawnCorpse(a.pos.x, a.pos.y, cause);
 
   for (const barrier of a.legacyBarriers) destroy(barrier);
