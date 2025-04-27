@@ -82,23 +82,29 @@ onUpdate("animal", (a) => {
     const dir = a.pos.sub(a.target.pos).unit();
     a.move(dir.scale(animalSpeed + 20));
   } 
-  else if (a.mode === "wander") {
-    if (allies.length > 0) {
-      const nearestAlly = allies.reduce((closest, ally) => 
-        a.pos.dist(ally.pos) < a.pos.dist(closest.pos) ? ally : closest, allies[0]
-      );
-      const distToAlly = a.pos.dist(nearestAlly.pos);
+else if (a.mode === "wander") {
+  if (allies.length > 0) {
+    const nearestAlly = allies.reduce((closest, ally) => 
+      a.pos.dist(ally.pos) < a.pos.dist(closest.pos) ? ally : closest, allies[0]
+    );
+    const distToAlly = a.pos.dist(nearestAlly.pos);
 
-      if (distToAlly > 30) {
-        const toward = nearestAlly.pos.sub(a.pos).unit();
-        a.move(toward.scale(animalSpeed * 0.4));
-      } else {
-        if (rand(1) < a.curiosity) {
-          a.move(vec2(rand(-1, 1), rand(-1, 1)).unit().scale(animalSpeed * 0.2));
-        }
+    if (distToAlly > 30) {
+      const toward = nearestAlly.pos.sub(a.pos).unit();
+      a.move(toward.scale(animalSpeed * 0.4));
+    } else {
+      if (rand(1) < a.curiosity) {
+        a.move(vec2(rand(-1, 1), rand(-1, 1)).unit().scale(animalSpeed * 0.2));
       }
     }
+  } else {
+    // 🧠 NEW: No allies = random wander!
+    if (rand(1) < 0.6) { // 60% chance to twitch each frame
+      a.move(vec2(rand(-1, 1), rand(-1, 1)).unit().scale(animalSpeed * 0.3));
+    }
   }
+}
+
 
   // === REPEL FROM BARRIERS + CORPSES ===
   for (const b of get("barrier")) {
