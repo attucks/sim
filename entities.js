@@ -46,6 +46,7 @@ function spawnAnimal(parent = null) {
   curiosity: rand(0.5, 1.5),
   territorial: rand(0.5, 1.5),
   legacyDesire: rand(0.5, 1.5),
+  lastLegacyTime: 0,
 }
 
   ]);
