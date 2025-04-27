@@ -191,3 +191,44 @@ onUpdate("animal", (a) => {
     }
   }
 });
+
+
+
+// Find target for hunting or attacking
+function findTarget(a) {
+  const foods = get("food");
+  const others = get("animal").filter(x => x !== a && x.alive);
+
+  let closestFood = null;
+  let closestPrey = null;
+  let foodDist = Infinity;
+  let preyDist = Infinity;
+
+  for (const f of foods) {
+    const dist = a.pos.dist(f.pos);
+    if (dist < foodDist) {
+      closestFood = f;
+      foodDist = dist;
+    }
+  }
+
+for (const o of others) {
+  if (areRelatives(a, o)) continue; // 🧬 skip family
+  const dist = a.pos.dist(o.pos);
+  if (dist < preyDist) {
+    closestPrey = o;
+    preyDist = dist;
+  }
+}
+
+
+  if (closestFood && (!closestPrey || foodDist < preyDist)) {
+    a.target = closestFood;
+  } else if (closestPrey) {
+    a.target = closestPrey;
+    closestPrey.mode = "flee";
+    closestPrey.target = a;
+  } else {
+    a.target = null;
+  }
+}
