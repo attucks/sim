@@ -140,6 +140,9 @@ else if (a.mode === "wander") {
 // === BIRTH LOGIC ===
 if (a.hunger < 1) {
     a.satedTime += dt();
+    if (a.satedTime > birthingTime) {
+        a.readyToBirth = true; // <-- THIS!
+    }
 } else {
     a.satedTime = 0;
 }
