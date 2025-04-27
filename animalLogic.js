@@ -54,7 +54,7 @@ onUpdate("animal", (a) => {
   }
 
   if (a.stats.lifetime > goldAge) {
-    a.color = rgb(255, 215, 0);
+    //a.color = rgb(255, 215, 0);
 
     if (!a.hasBadge) {
       const badge = add([
