@@ -1,53 +1,73 @@
-function spawnAnimal(x = rand(penX + 40, penX + penWidth - 40), y = rand(penY + 40, penY + penHeight - 40), parent = null) {
-  const name = generateName();
-  const familyLine = parent ? [...parent.familyLine, name] : [name];
-  const familyColor = parent ? parent.familyColor : rgb(rand(50, 255), rand(50, 255), rand(50, 255)); // 🔥 PURE rgb()
+function spawnAnimal(parent = null) {
+  const spawnPos = parent
+    ? parent.pos.add(vec2(rand(-10, 10), rand(-10, 10)))
+    : vec2(rand(penX, penX + penWidth), rand(penY, penY + penHeight));
 
-const a = add([
-  sprite("creatureFront"), // Attach sprite ONCE
-  scale(1.5), // or whatever size you like
-  pos(x, y),
-  color(familyColor),
-  area(),
-  "animal",
-  {
-    dir: vec2(rand(-1, 1), rand(-1, 1)).unit(),
-    currentDirection: "front", 
-    hunger: 0,
-    satedTime: 0,
-    mode: "wander",
-    target: null,
-    alive: true,
-    hungerTime: 0,
+  const familyColor = parent ? parent.familyColor : rgb(rand(0, 255), rand(0, 255), rand(0, 255));
+  const parentName = parent ? parent.firstName : null;
+  const lastName = parent ? parent.firstName + "z" : null;
 
-    firstName: name,
-    lastName: parent ? parent.firstName + "z" : "",
-    parentName: parent ? parent.firstName : null,
-    offspring: [],
-    victims: [],
-    stats: { lifetime: 0, kids: 0, foods: 0, kills: 0 },
-    legacyBarriers: [],
-    familyLine,
-    familyColor,
-    bravery: rand(0.3, 1.0),
-    curiosity: rand(0.3, 1.0),
-    territorial: rand(0.3, 1.0),
-    greed: rand(0.3, 1.0),
-    legacyDesire: rand(0.3, 1.0),
-    lastLegacyTime: 0,
-    currentSprite: "creatureFront", // Start facing front
-    packMode: false, // initially not in a pack
+  const firstName = generateName(); // 👈 Generate name first
 
+  const a = add([
+    sprite("creatureFront"),
+    pos(spawnPos),
+    area(),
+    anchor("center"),
+    body(),
+    "animal",
+{
+  alive: true,
+  color: familyColor,
+  familyColor: familyColor,
+  firstName: firstName,
+  lastName: lastName,
+  parentName: parentName,
+  familyLine: parent ? [...parent.familyLine, parent.firstName, firstName] : [firstName],
+  stats: {
+    lifetime: 0,
+    kids: 0,
+    foods: 0,
+    kills: 0,
   },
-]);
+  satedTime: 0,
+  hunger: 0,
+  hungerTime: 0,
+  readyToBirth: false,
+  badge: null,
+  hasBadge: false,
+  victims: [],
+  offspring: [],
+  legacyBlocks: [],
+  legacyBarriers: [], // 🛠 ✅ ADD THIS
+  mode: "wander",
+  dir: vec2(rand(-1, 1), rand(-1, 1)).unit(),
+  greed: rand(0.5, 1.5),
+  curiosity: rand(0.5, 1.5),
+  territorial: rand(0.5, 1.5),
+  legacyDesire: rand(0.5, 1.5),
+}
 
+  ]);
 
+  if (parent) {
+    parent.offspring.push(firstName);
+  }
 
+  animalsStats.push({
+    firstName: a.firstName,
+    lastName: a.lastName,
+    parentName: a.parentName,
+    stats: a.stats,
+    victims: a.victims,
+    offspring: a.offspring,
+  });
 
-  animalsStats.push(a);
-  if (parent) parent.offspring.push(name);
   return a;
 }
+
+
+
 
 
 
