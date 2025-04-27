@@ -1,4 +1,5 @@
 // main.js
+import { solid } from "kaboom";
 
 // barrierSize needs kaboom() first, so we set it now:
 window.barrierSize = vec2(10, 10);
