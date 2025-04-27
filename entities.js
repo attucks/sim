@@ -55,14 +55,16 @@ function spawnAnimal(parent = null) {
     parent.offspring.push(firstName);
   }
 
-  animalsStats.push({
-    firstName: a.firstName,
-    lastName: a.lastName,
-    parentName: a.parentName,
-    stats: a.stats,
-    victims: a.victims,
-    offspring: a.offspring,
-  });
+animalsStats.push({
+  firstName: a.firstName,
+  lastName: a.lastName,
+  parentName: a.parentName,
+  stats: a.stats,
+  victims: a.victims,
+  offspring: a.offspring,
+  familyColor: a.familyColor, // ✅ ADD THIS
+});
+
 
   return a;
 }
@@ -112,18 +114,19 @@ function killAnimal(a, cause = "normal") {
 
   for (const barrier of a.legacyBarriers) destroy(barrier);
 
-  ancestorStats.push({
-    symbol: a.text,
-    name: `${a.firstName} ${a.lastName}`,
-    parent: a.parentName || "--",
-    offspring: [...(a.offspring || [])],
-    lifetime: a.stats.lifetime.toFixed(1),
-    kids: a.stats.kids,
-    foods: a.stats.foods,
-    kills: a.stats.kills,
-    magic: computeMagicNumber(a).toFixed(1),
-    victims: [...(a.victims || [])],
-  });
+ancestorStats.push({
+  symbol: a.text,
+  name: `${a.firstName} ${a.lastName}`,
+  parent: a.parentName || "--",
+  offspring: [...(a.offspring || [])],
+  lifetime: a.stats.lifetime.toFixed(1),
+  kids: a.stats.kids,
+  foods: a.stats.foods,
+  kills: a.stats.kills,
+  magic: computeMagicNumber(a).toFixed(1),
+  victims: [...(a.victims || [])],
+  familyColor: a.familyColor, // ✅ ADD THIS
+});
 
   // 🛠 Correctly remove from animalsStats
   animalsStats = animalsStats.filter(s =>
@@ -149,7 +152,7 @@ function generateLegacyColor(firstName, lastName) {
 function leaveLegacyBlock(a) {
   const sx = Math.floor((a.pos.x - penX) / 10) * 10 + penX;
   const sy = Math.floor((a.pos.y - penY) / 10) * 10 + penY;
-  addNews(`${a.firstName} left a legacy`);
+ // addNews(`${a.firstName} left a legacy`);
 
 const legacyBlock = add([
   rect(10, 10),

@@ -68,5 +68,5 @@ function updateStatsUI() {
 
 
 
-setInterval(updateStatsUI, 1000); // update every second
+setInterval(updateStatsUI, 10000); // update every second
 })

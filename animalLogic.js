@@ -1,21 +1,21 @@
 onUpdate("animal", (a) => {
   if (!a.alive) return;
 
-  // === TRACK ALLIES + ENEMIES ONCE ===
-  const allies = get("animal").filter(o => o !== a && areRelatives(a, o) && o.alive);
-  const enemies = get("animal").filter(o => o !== a && !areRelatives(a, o) && o.alive);
-
-  // === PACK DETECTION ===
-  if (allies.length >= 16) {
-    a.packMode = true;
-  } else {
-    a.packMode = false;
+  // === THROTTLE ALLY/ENEMY SCANNING ===
+  a.scanTimer = (a.scanTimer || 0) + dt();
+  if (a.scanTimer > 1) { // Scan every 1 second
+    a.allies = get("animal").filter(o => o !== a && areRelatives(a, o) && o.alive);
+    a.enemies = get("animal").filter(o => o !== a && !areRelatives(a, o) && o.alive);
+    a.scanTimer = 0;
   }
 
+  // === PACK DETECTION (based on latest scan) ===
+  a.packMode = (a.allies && a.allies.length >= 16);
+
   // === HUNT TARGET IF PACK ===
-  if (a.packMode && enemies.length > 0) {
-    const nearestEnemy = enemies.reduce((closest, enemy) =>
-      a.pos.dist(enemy.pos) < a.pos.dist(closest.pos) ? enemy : closest, enemies[0]
+  if (a.packMode && a.enemies && a.enemies.length > 0) {
+    const nearestEnemy = a.enemies.reduce((closest, enemy) =>
+      a.pos.dist(enemy.pos) < a.pos.dist(closest.pos) ? enemy : closest, a.enemies[0]
     );
     a.mode = "hunt";
     a.target = nearestEnemy;
@@ -27,13 +27,14 @@ onUpdate("animal", (a) => {
 
   if (a.hunger > starvationThreshold) {
     a.hungerTime += dt();
+    if (a.hungerTime > starvationTimeLimit) {
+      return killAnimal(a, "starvation");
+    }
   } else {
     a.hungerTime = 0;
   }
 
-  if (a.hungerTime > starvationTimeLimit) return killAnimal(a, "starvation");
-
-  // === TARGET REFRESH ===
+  // === TARGET VALIDATION ===
   if (a.target && !a.target.exists()) {
     a.target = null;
     a.mode = "wander";
@@ -44,121 +45,112 @@ onUpdate("animal", (a) => {
     findTarget(a);
   }
 
-  // === COLORING ===
-  if (a.mode === "wander") {
-    a.color = scaleColor(a.familyColor, 1.0);
-  } else if (a.mode === "hunt") {
-    a.color = scaleColor(a.familyColor, 1.3);
-  } else if (a.mode === "flee") {
-    a.color = scaleColor(a.familyColor, 0.7);
-  }
+  // === COLORING BASED ON MODE ===
+  const colorMultiplier = (a.mode === "wander") ? 1.0 :
+                           (a.mode === "hunt") ? 1.3 :
+                           (a.mode === "flee") ? 0.7 : 1.0;
+  a.color = scaleColor(a.familyColor, colorMultiplier);
 
-  if (a.stats.lifetime > goldAge) {
-    //a.color = rgb(255, 215, 0);
-
-    if (!a.hasBadge) {
-      const badge = add([
-        rect(5, 5),
-        pos(a.pos.x, a.pos.y - 8),
-        color(a.familyColor),
-        area(),
-        "badge",
-      ]);
-      a.badge = badge;
-      a.hasBadge = true;
-    }
+  // === BADGE CREATION ON GOLD AGE ===
+  if (a.stats.lifetime > goldAge && !a.hasBadge) {
+    a.badge = add([
+      rect(5, 5),
+      pos(a.pos.x, a.pos.y - 8),
+      color(a.familyColor),
+      area(),
+      "badge",
+    ]);
+    a.hasBadge = true;
   }
 
   if (a.badge) {
     a.badge.pos = vec2(a.pos.x, a.pos.y - 8);
   }
 
-  // === MOVEMENT PRIORITY ===
+  // === MOVEMENT ===
   if (a.mode === "hunt" && a.target) {
     const dir = a.target.pos.sub(a.pos).unit();
     a.move(dir.scale(animalSpeed));
-  } 
-  else if (a.mode === "flee" && a.target) {
+  } else if (a.mode === "flee" && a.target) {
     const dir = a.pos.sub(a.target.pos).unit();
     a.move(dir.scale(animalSpeed + 20));
-  } 
-else if (a.mode === "wander") {
-  if (allies.length > 0) {
-    const nearestAlly = allies.reduce((closest, ally) => 
-      a.pos.dist(ally.pos) < a.pos.dist(closest.pos) ? ally : closest, allies[0]
-    );
-    const distToAlly = a.pos.dist(nearestAlly.pos);
+  } else if (a.mode === "wander") {
+    if (a.allies && a.allies.length > 0) {
+      const nearestAlly = a.allies.reduce((closest, ally) =>
+        a.pos.dist(ally.pos) < a.pos.dist(closest.pos) ? ally : closest, a.allies[0]
+      );
+      const distToAlly = a.pos.dist(nearestAlly.pos);
 
-    if (distToAlly > 30) {
-      const toward = nearestAlly.pos.sub(a.pos).unit();
-      a.move(toward.scale(animalSpeed * 0.4));
-    } else {
-      if (rand(1) < a.curiosity) {
+      if (distToAlly > 30) {
+        const toward = nearestAlly.pos.sub(a.pos).unit();
+        a.move(toward.scale(animalSpeed * 0.4));
+      } else if (rand(1) < a.curiosity) {
         a.move(vec2(rand(-1, 1), rand(-1, 1)).unit().scale(animalSpeed * 0.2));
       }
-    }
-  } else {
-    // 🧠 NEW: No allies = random wander!
-    if (rand(1) < 0.6) { // 60% chance to twitch each frame
+    } else if (rand(1) < 0.6) {
       a.move(vec2(rand(-1, 1), rand(-1, 1)).unit().scale(animalSpeed * 0.3));
     }
   }
-}
 
-
-  // === REPEL FROM BARRIERS + CORPSES ===
-  for (const b of get("barrier")) {
-    const dist = a.pos.dist(b.pos);
-    if (dist < barrierRepelDistance) {
-      const away = a.pos.sub(b.pos).unit();
-      a.move(away.scale(20)); // mild repel
-    }
-    if (dist < 20 && !colorsMatch(a.familyColor, b.familyColor)) {
-      if (rand(1) < a.territorial * 0.3) {
-        destroy(b);
-        addNews(`${a.firstName} destroyed a legacy of ${b.creatorName || "unknown"}!`);
+  // === REPEL FROM BARRIERS + CORPSES (throttled) ===
+  a.repelTimer = (a.repelTimer || 0) + dt();
+  if (a.repelTimer > 0.5) { // Only repel every 0.5s
+    for (const b of get("barrier")) {
+      const dist = a.pos.dist(b.pos);
+      if (dist < barrierRepelDistance) {
+        const away = a.pos.sub(b.pos).unit();
+        a.move(away.scale(20));
+      }
+      if (dist < 20 && !colorsMatch(a.familyColor, b.familyColor)) {
+        if (rand(1) < a.territorial * 0.3) {
+          destroy(b);
+         // addNews(`${a.firstName} destroyed a legacy of ${b.creatorName || "unknown"}!`);
+        }
       }
     }
-  }
-
-  for (const c of get("corpse")) {
-    if (a.pos.dist(c.pos) < corpseRepelDistance) {
-      const away = a.pos.sub(c.pos).unit();
-      a.move(away.scale(20)); // mild repel
+    for (const c of get("corpse")) {
+      if (a.pos.dist(c.pos) < corpseRepelDistance) {
+        const away = a.pos.sub(c.pos).unit();
+        a.move(away.scale(20));
+      }
     }
+    a.repelTimer = 0;
   }
 
-  // === HELP FAMILY ===
-  for (const o of allies) {
-    if (o.mode === "flee" && o.target && !areRelatives(a, o.target)) {
-      a.mode = "hunt";
-      a.target = o.target;
-      break;
+  // === HELP FAMILY (staggered) ===
+  a.helpTimer = (a.helpTimer || 0) + dt();
+  if (a.helpTimer > 1) {
+    if (a.allies) {
+      for (const o of a.allies) {
+        if (o.mode === "flee" && o.target && !areRelatives(a, o.target)) {
+          a.mode = "hunt";
+          a.target = o.target;
+          break;
+        }
+      }
     }
+    a.helpTimer = 0;
   }
 
-// === BIRTH LOGIC ===
-if (a.hunger < 1) {
+  // === BIRTH LOGIC ===
+  if (a.hunger < 1) {
     a.satedTime += dt();
     if (a.satedTime > birthingTime) {
-        a.readyToBirth = true; // <-- THIS!
+      a.readyToBirth = true;
     }
-} else {
+  } else {
     a.satedTime = 0;
-}
+  }
 
-// Check if ready to birth and well-fed
-if (a.readyToBirth && a.hunger > birthingHungerThreshold) {
+  if (a.readyToBirth && a.hunger > birthingHungerThreshold) {
     if (get("animal").length < maxPopulation) {
-        spawnAnimal(a);
-        a.readyToBirth = false;
-        a.birthTimer = 0;
+      spawnAnimal(a);
+      a.readyToBirth = false;
+      a.birthTimer = 0;
     } else {
-        // Population too high, don't birth yet
-        a.birthTimer = 0; // Reset birth timer so they have to get ready again
+      a.birthTimer = 0;
     }
-}
-
+  }
 
   // === BORDER CHECKING ===
   const boundsMargin = 5;
@@ -179,14 +171,14 @@ if (a.readyToBirth && a.hunger > birthingHungerThreshold) {
     if (a.mode === "wander") a.dir.y *= -1;
   }
 
-  // === LEGACY BLOCK CREATION ===
+  // === LEGACY BLOCK CREATION (staggered chance) ===
   const legacyChance = (a.territorial + a.legacyDesire) / 2;
   if (a.stats.lifetime > goldAge && a.stats.lifetime - a.lastLegacyTime > 30 && rand(1) < legacyChance * 0.5) {
     leaveLegacyBlock(a);
     a.lastLegacyTime = a.stats.lifetime;
   }
 
-  // === SPRITE UPDATE ===
+  // === SPRITE UPDATE (only if moving enough) ===
   const threshold = 0.1;
   if (Math.abs(a.dir.x) > Math.abs(a.dir.y)) {
     if (a.dir.x > threshold && a.currentDirection !== "right") {
@@ -205,9 +197,10 @@ if (a.readyToBirth && a.hunger > birthingHungerThreshold) {
       a.currentDirection = "front";
     }
   }
-  clampToPen(a);
 
+  clampToPen(a);
 });
+
 
 
 
