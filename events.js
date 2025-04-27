@@ -87,7 +87,7 @@ onKeyPress("b", () => {
     pos(sx, sy),
     color(255, 255, 255),
     area(),
-    solid(),
+    //solid(),
     "barrier",
     { isNLB: true } // ← mark it!
 ]);
