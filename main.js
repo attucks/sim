@@ -8,7 +8,7 @@ add([
   rect(penWidth, penHeight),
   pos(penX, penY),
   outline(4),
-  color(86, 86, 86),
+  color(50, 50, 50),
 ]);
 loadSprite("creatureFront", "sprites/front.png");
 loadSprite("creatureLeft", "sprites/left.png");
