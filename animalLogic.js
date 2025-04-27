@@ -25,15 +25,16 @@ if (a.hunger < 1) {
 } else {
   a.satedTime = 0;
 }
-  // Birthing logic
-if (a.satedTime > birthingTime) {
+
+// Birth
+if (a.satedTime > birthingTime && a.hunger < 1) { // ✅ must still be full
   a.satedTime = 0;
   a.stats.kids++;
 
-  // No more modifying a.text
   const child = spawnAnimal(a.pos.x + rand(-20, 20), a.pos.y + rand(-20, 20), a);
   addNews(`${a.firstName} birthed ${child.firstName} ${child.lastName}`);
 }
+
 
 if (a.mode === "wander") {
   a.color = scaleColor(a.familyColor, 1.0); 
