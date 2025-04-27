@@ -3,38 +3,44 @@ function spawnAnimal(x = rand(penX + 40, penX + penWidth - 40), y = rand(penY + 
   const familyLine = parent ? [...parent.familyLine, name] : [name];
   const familyColor = parent ? parent.familyColor : rgb(rand(50, 255), rand(50, 255), rand(50, 255)); // 🔥 PURE rgb()
 
-  const a = add([
-    text(name.toLowerCase(), { size: 16 }),
-    pos(x, y),
-    color(familyColor), // 🔥 use it here correctly
-    area(),
-    "animal",
-    {
-      dir: vec2(rand(-1, 1), rand(-1, 1)).unit(),
-      hunger: 0,
-      satedTime: 0,
-      mode: "wander",
-      target: null,
-      alive: true,
-      hungerTime: 0,
+const a = add([
+  sprite("creatureFront"), // Attach sprite ONCE
+  scale(1), // or whatever size you like
+  pos(x, y),
+  color(familyColor),
+  area(),
+  "animal",
+  {
+    dir: vec2(rand(-1, 1), rand(-1, 1)).unit(),
+    currentDirection: "front", 
+    hunger: 0,
+    satedTime: 0,
+    mode: "wander",
+    target: null,
+    alive: true,
+    hungerTime: 0,
 
-      firstName: name,
-      lastName: parent ? parent.firstName + "z" : "",
-      parentName: parent ? parent.firstName : null,
-      offspring: [],
-      victims: [],
-      stats: { lifetime: 0, kids: 0, foods: 0, kills: 0 },
-      legacyBarriers: [],
-      familyLine,
-      familyColor, // 🧬 pure rgb() object
-      bravery: rand(0.3, 1.0),
-      curiosity: rand(0.3, 1.0),
-      territorial: rand(0.3, 1.0),
-      greed: rand(0.3, 1.0),
-      legacyDesire: rand(0.3, 1.0),
-      lastLegacyTime: 0,
-    },
-  ]);
+    firstName: name,
+    lastName: parent ? parent.firstName + "z" : "",
+    parentName: parent ? parent.firstName : null,
+    offspring: [],
+    victims: [],
+    stats: { lifetime: 0, kids: 0, foods: 0, kills: 0 },
+    legacyBarriers: [],
+    familyLine,
+    familyColor,
+    bravery: rand(0.3, 1.0),
+    curiosity: rand(0.3, 1.0),
+    territorial: rand(0.3, 1.0),
+    greed: rand(0.3, 1.0),
+    legacyDesire: rand(0.3, 1.0),
+    lastLegacyTime: 0,
+    currentSprite: "creatureFront", // Start facing front
+  },
+]);
+
+
+
 
   animalsStats.push(a);
   if (parent) parent.offspring.push(name);

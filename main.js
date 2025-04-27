@@ -8,8 +8,12 @@ add([
   rect(penWidth, penHeight),
   pos(penX, penY),
   outline(4),
-  color(0, 0, 0),
+  color(86, 86, 86),
 ]);
+loadSprite("creatureFront", "sprites/front.png");
+loadSprite("creatureLeft", "sprites/left.png");
+loadSprite("creatureRight", "sprites/right.png");
+
 
 // Spawn initial animals
 for (let i = 0; i < 20; i++) {

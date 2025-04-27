@@ -22,18 +22,15 @@ onUpdate("animal", (a) => {
   }
 
   // Birthing logic
-  if (a.hunger < 1) {
-    a.satedTime += dt();
-  } else {
-    a.satedTime = 0;
-  }
 if (a.satedTime > birthingTime) {
   a.satedTime = 0;
   a.stats.kids++;
-  a.text = a.firstName.toUpperCase();
+
+  // No more modifying a.text
   const child = spawnAnimal(a.pos.x + rand(-20, 20), a.pos.y + rand(-20, 20), a);
   addNews(`${a.firstName} birthed ${child.firstName} ${child.lastName}`);
 }
+
 if (a.mode === "wander") {
   a.color = scaleColor(a.familyColor, 1.0); 
 } else if (a.mode === "hunt") {
@@ -85,6 +82,37 @@ if (a.badge) {
       a.move(away.scale(animalSpeed * 0.5));
     }
   }
+
+
+
+
+const threshold = 0.1; // sensitivity for minimal movement (lower = more sensitive)
+
+if (Math.abs(a.dir.x) > Math.abs(a.dir.y)) {
+  // Horizontal movement dominant
+  if (a.dir.x > threshold && a.currentDirection !== "right") {
+    a.use(sprite("creatureRight"));
+    a.color = a.familyColor;
+    a.currentDirection = "right";
+  } else if (a.dir.x < -threshold && a.currentDirection !== "left") {
+    a.use(sprite("creatureLeft"));
+    a.color = a.familyColor;
+    a.currentDirection = "left";
+  }
+} else {
+  // Vertical movement dominant
+  if (Math.abs(a.dir.y) > threshold && a.currentDirection !== "front") {
+    a.use(sprite("creatureFront"));
+    a.color = a.familyColor;
+    a.currentDirection = "front";
+  }
+}
+
+
+
+
+
+
 
   // Repel from barriers
   for (const b of get("barrier")) {
