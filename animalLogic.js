@@ -1,5 +1,21 @@
 onUpdate("animal", (a) => {
   if (!a.alive) return;
+  const allies = get("animal").filter(o => o !== a && areRelatives(a, o) && o.alive);
+const enemies = get("animal").filter(o => o !== a && !areRelatives(a, o) && o.alive);
+
+if (allies.length >= 2) { // ✅ "me" + 2 allies = 3 total
+  a.packMode = true;
+} else {
+  a.packMode = false;
+}
+if (a.packMode && enemies.length > 0) {
+  const nearestEnemy = enemies.reduce((closest, enemy) =>
+    a.pos.dist(enemy.pos) < a.pos.dist(closest.pos) ? enemy : closest, enemies[0]
+  );
+  a.mode = "hunt";
+  a.target = nearestEnemy;
+}
+
 
   // Update lifetime and hunger
   a.stats.lifetime += dt();

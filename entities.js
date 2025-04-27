@@ -36,6 +36,8 @@ const a = add([
     legacyDesire: rand(0.3, 1.0),
     lastLegacyTime: 0,
     currentSprite: "creatureFront", // Start facing front
+    packMode: false, // initially not in a pack
+
   },
 ]);
 
