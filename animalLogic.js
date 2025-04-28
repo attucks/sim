@@ -178,6 +178,9 @@ else if (a.mode === "wander") {
   }
 
   // === SPRITE UPDATE ===
+
+
+  /*
   const threshold = 0.1;
   if (Math.abs(a.dir.x) > Math.abs(a.dir.y)) {
     if (a.dir.x > threshold && a.currentDirection !== "right") {
@@ -197,7 +200,7 @@ else if (a.mode === "wander") {
     }
   }
 });
-
+*/
 
 
 // Find target for hunting or attacking
