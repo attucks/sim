@@ -72,7 +72,7 @@ function spawnFoodAt(x, y) {
 }
 
 function spawnCorpse(x, y, cause = "normal") {
-  const char = cause === "starvation" ? "☠️" : "x";
+  const char = cause === "starvation" ? "☠️" : "☠️";
   const c = add([
     text(char, { size: 16 }),
     pos(x, y),
