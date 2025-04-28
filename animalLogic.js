@@ -177,6 +177,7 @@ onUpdate("animal", (a) => {
     leaveLegacyBlock(a);
     a.lastLegacyTime = a.stats.lifetime;
   }
+}
 
 
 
@@ -219,5 +220,3 @@ for (const o of others) {
     a.target = null;
   }
 }
-};
-
