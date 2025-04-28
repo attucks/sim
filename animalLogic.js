@@ -1,15 +1,32 @@
 onUpdate("animal", (a) => {
   if (!a.alive) return;
 
+  // === UTIL: Line of Sight ===
+  function hasLineOfSight(from, to) {
+    const direction = to.pos.sub(from.pos).unit();
+    const distance = from.pos.dist(to.pos);
+    for (let d = 0; d < distance; d += 4) {
+      const point = from.pos.add(direction.scale(d));
+      if (get("barrier").some(b => b.area && b.area.contains(point))) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   // === THROTTLE ALLY/ENEMY SCANNING ===
   a.scanTimer = (a.scanTimer || 0) + dt();
-  if (a.scanTimer > 1) { // Scan every 1 second
-    a.allies  = get("animal").filter(o => o !== a && areRelatives(a, o) && o.alive);
-    a.enemies = get("animal").filter(o => o !== a && !areRelatives(a, o) && o.alive);
+  if (a.scanTimer > 1) {
+    a.allies = get("animal").filter(o =>
+      o !== a && areRelatives(a, o) && o.alive && hasLineOfSight(a, o)
+    );
+    a.enemies = get("animal").filter(o =>
+      o !== a && !areRelatives(a, o) && o.alive && hasLineOfSight(a, o)
+    );
     a.scanTimer = 0;
   }
 
-  // === PACK DETECTION (based on latest scan) ===
+  // === PACK DETECTION ===
   a.packMode = (a.allies && a.allies.length >= 16);
 
   // === HUNT TARGET IF PACK ===
@@ -18,13 +35,13 @@ onUpdate("animal", (a) => {
       a.pos.dist(enemy.pos) < a.pos.dist(closest.pos) ? enemy : closest,
       a.enemies[0]
     );
-    a.mode   = "hunt";
+    a.mode = "hunt";
     a.target = nearestEnemy;
   }
 
   // === BASIC STATE UPDATES ===
   a.stats.lifetime += dt();
-  a.hunger         += dt() * hungerRate;
+  a.hunger += dt() * hungerRate;
 
   if (a.hunger > starvationThreshold) {
     a.hungerTime += dt();
@@ -38,7 +55,7 @@ onUpdate("animal", (a) => {
   // === TARGET VALIDATION ===
   if (a.target && !a.target.exists()) {
     a.target = null;
-    a.mode   = "wander";
+    a.mode = "wander";
   }
 
   if (a.hunger > (3 - a.greed) && a.mode !== "hunt") {
@@ -48,11 +65,11 @@ onUpdate("animal", (a) => {
 
   // === COLORING BASED ON MODE ===
   const colorMultiplier = (a.mode === "wander") ? 1.0 :
-                           (a.mode === "hunt")   ? 1.3 :
-                           (a.mode === "flee")   ? 0.7 : 1.0;
+    (a.mode === "hunt") ? 1.3 :
+    (a.mode === "flee") ? 0.7 : 1.0;
   a.color = scaleColor(a.familyColor, colorMultiplier);
 
-  // === BADGE CREATION ON GOLD AGE ===
+  // === BADGE CREATION ===
   if (a.stats.lifetime > goldAge && !a.hasBadge) {
     a.badge = add([
       rect(5, 5),
@@ -63,18 +80,32 @@ onUpdate("animal", (a) => {
     ]);
     a.hasBadge = true;
   }
-
   if (a.badge) {
     a.badge.pos = vec2(a.pos.x, a.pos.y - 8);
   }
 
-  // === MOVEMENT ===
+  // === MOVEMENT (WITH BARRIER CHECK) ===
+  function tryMove(dirVec, speed) {
+    const nextPos = a.pos.add(dirVec.unit().scale(speed * dt()));
+    const collision = get("barrier").some(b => b.area && b.area.collides({
+      pos: nextPos,
+      width: a.width,
+      height: a.height,
+    }));
+    if (!collision) {
+      a.move(dirVec.scale(speed));
+    } else {
+      // Hit a barrier — optionally bounce or stop
+      if (a.mode === "wander") {
+        a.dir = vec2(rand(-1, 1), rand(-1, 1)).unit(); // New random direction
+      }
+    }
+  }
+
   if (a.mode === "hunt" && a.target) {
-    const dir = a.target.pos.sub(a.pos).unit();
-    a.move(dir.scale(animalSpeed));
+    tryMove(a.target.pos.sub(a.pos), animalSpeed);
   } else if (a.mode === "flee" && a.target) {
-    const dir = a.pos.sub(a.target.pos).unit();
-    a.move(dir.scale(animalSpeed + 20));
+    tryMove(a.pos.sub(a.target.pos), animalSpeed + 20);
   } else if (a.mode === "wander") {
     if (a.allies && a.allies.length > 0) {
       const nearestAlly = a.allies.reduce((closest, ally) =>
@@ -84,27 +115,26 @@ onUpdate("animal", (a) => {
       const distToAlly = a.pos.dist(nearestAlly.pos);
 
       if (distToAlly > 30) {
-        const toward = nearestAlly.pos.sub(a.pos).unit();
-        a.move(toward.scale(animalSpeed * 0.4));
+        tryMove(nearestAlly.pos.sub(a.pos), animalSpeed * 0.4);
       } else if (rand(1) < a.curiosity) {
-        a.move(vec2(rand(-1, 1), rand(-1, 1)).unit().scale(animalSpeed * 0.2));
+        tryMove(vec2(rand(-1, 1), rand(-1, 1)).unit(), animalSpeed * 0.2);
       }
     } else if (rand(1) < 0.6) {
-      a.move(vec2(rand(-1, 1), rand(-1, 1)).unit().scale(animalSpeed * 0.3));
+      tryMove(vec2(rand(-1, 1), rand(-1, 1)).unit(), animalSpeed * 0.3);
     }
   }
 
-  // === REPEL FROM BARRIERS + CORPSES (throttled) ===
+  // === REPEL FROM BARRIERS + CORPSES ===
   a.repelTimer = (a.repelTimer || 0) + dt();
-  if (a.repelTimer > 0.5) { // Only repel every 0.5s
+  if (a.repelTimer > 0.5) {
     for (const b of get("barrier")) {
       const dist = a.pos.dist(b.pos);
       if (dist < barrierRepelDistance) {
         const away = a.pos.sub(b.pos).unit();
-        a.move(away.scale(20));
+        tryMove(away, 20);
       }
       if (dist < 20 && !colorsMatch(a.familyColor, b.familyColor)) {
-        if (rand(1) < a.territorial * 0.3) {
+        if (rand(1) < a.territorial * 0.3 && b.isLegacy) {
           destroy(b);
           // addNews(`${a.firstName} destroyed a legacy of ${b.creatorName || "unknown"}!`);
         }
@@ -113,19 +143,19 @@ onUpdate("animal", (a) => {
     for (const c of get("corpse")) {
       if (a.pos.dist(c.pos) < corpseRepelDistance) {
         const away = a.pos.sub(c.pos).unit();
-        a.move(away.scale(20));
+        tryMove(away, 20);
       }
     }
     a.repelTimer = 0;
   }
 
-  // === HELP FAMILY (staggered) ===
+  // === HELP FAMILY ===
   a.helpTimer = (a.helpTimer || 0) + dt();
   if (a.helpTimer > 1) {
     if (a.allies) {
       for (const o of a.allies) {
         if (o.mode === "flee" && o.target && !areRelatives(a, o.target)) {
-          a.mode   = "hunt";
+          a.mode = "hunt";
           a.target = o.target;
           break;
         }
@@ -144,19 +174,17 @@ onUpdate("animal", (a) => {
     a.satedTime = 0;
   }
 
-if (a.readyToBirth && a.hunger > birthingHungerThreshold) {
-  if (get("animal").length < maxPopulation) {
-    // spawn at explicit x,y (near the parent):
-    const cx = a.pos.x + rand(-20, 20);
-    const cy = a.pos.y + rand(-20, 20);
-    const child = spawnAnimal(cx, cy, a);
-    a.readyToBirth = false;
-    a.birthTimer   = 0;
-  } else {
-    a.birthTimer = 0;
+  if (a.readyToBirth && a.hunger > birthingHungerThreshold) {
+    if (get("animal").length < maxPopulation) {
+      const cx = a.pos.x + rand(-20, 20);
+      const cy = a.pos.y + rand(-20, 20);
+      spawnAnimal(cx, cy, a);
+      a.readyToBirth = false;
+      a.birthTimer = 0;
+    } else {
+      a.birthTimer = 0;
+    }
   }
-}
-
 
   // === BORDER CHECKING ===
   const boundsMargin = 5;
@@ -177,7 +205,7 @@ if (a.readyToBirth && a.hunger > birthingHungerThreshold) {
     if (a.mode === "wander") a.dir.y *= -1;
   }
 
-  // === LEGACY BLOCK CREATION (staggered chance) ===
+  // === LEGACY BLOCK CREATION ===
   const legacyChance = (a.territorial + a.legacyDesire) / 2;
   if (
     a.stats.lifetime > goldAge &&
@@ -187,39 +215,40 @@ if (a.readyToBirth && a.hunger > birthingHungerThreshold) {
     leaveLegacyBlock(a);
     a.lastLegacyTime = a.stats.lifetime;
   }
-
-}); // ← properly close onUpdate
+}); // end onUpdate
 
 // Find target for hunting or attacking
 function findTarget(a) {
-  const foods  = get("food");
+  const foods = get("food");
   const others = get("animal").filter(x => x !== a && x.alive);
 
   let closestFood = null, foodDist = Infinity;
   let closestPrey = null, preyDist = Infinity;
 
   for (const f of foods) {
+    if (!hasLineOfSight(a, f)) continue;
     const dist = a.pos.dist(f.pos);
     if (dist < foodDist) {
       closestFood = f;
-      foodDist     = dist;
+      foodDist = dist;
     }
   }
 
   for (const o of others) {
-    if (areRelatives(a, o)) continue; // skip family
+    if (areRelatives(a, o)) continue;
+    if (!hasLineOfSight(a, o)) continue;
     const dist = a.pos.dist(o.pos);
     if (dist < preyDist) {
       closestPrey = o;
-      preyDist     = dist;
+      preyDist = dist;
     }
   }
 
   if (closestFood && (!closestPrey || foodDist < preyDist)) {
     a.target = closestFood;
   } else if (closestPrey) {
-    a.target          = closestPrey;
-    closestPrey.mode  = "flee";
+    a.target = closestPrey;
+    closestPrey.mode = "flee";
     closestPrey.target = a;
   } else {
     a.target = null;
