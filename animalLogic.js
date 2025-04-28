@@ -85,22 +85,23 @@ onUpdate("animal", (a) => {
   }
 
   // === MOVEMENT (WITH BARRIER CHECK) ===
-  function tryMove(dirVec, speed) {
-    const nextPos = a.pos.add(dirVec.unit().scale(speed * dt()));
-    const collision = get("barrier").some(b => b.area && b.area.collides({
-      pos: nextPos,
-      width: a.width,
-      height: a.height,
-    }));
-    if (!collision) {
-      a.move(dirVec.scale(speed));
-    } else {
-      // Hit a barrier — optionally bounce or stop
-      if (a.mode === "wander") {
-        a.dir = vec2(rand(-1, 1), rand(-1, 1)).unit(); // New random direction
-      }
+function tryMove(dirVec, speed) {
+  const nextPos = a.pos.add(dirVec.unit().scale(speed * dt()));
+
+  const collision = testRect({
+    pos: nextPos,
+    width: a.width,
+    height: a.height,
+  }, (obj) => obj.is("barrier"));
+
+  if (!collision) {
+    a.move(dirVec.scale(speed));
+  } else {
+    if (a.mode === "wander") {
+      a.dir = vec2(rand(-1, 1), rand(-1, 1)).unit();
     }
   }
+}
 
   if (a.mode === "hunt" && a.target) {
     tryMove(a.target.pos.sub(a.pos), animalSpeed);
