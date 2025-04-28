@@ -2,17 +2,30 @@ onUpdate("animal", (a) => {
   if (!a.alive) return;
 
   // === UTIL: Line of Sight ===
-  function hasLineOfSight(from, to) {
-    const direction = to.pos.sub(from.pos).unit();
-    const distance = from.pos.dist(to.pos);
-    for (let d = 0; d < distance; d += 4) {
-      const point = from.pos.add(direction.scale(d));
-      if (get("barrier").some(b => b.area && b.area.contains(point))) {
-        return false;
-      }
-    }
-    return true;
+function hasLineOfSight(from, to) {
+  const direction = to.pos.sub(from.pos).unit();
+  const distance = from.pos.dist(to.pos);
+
+  for (let d = 0; d < distance; d += 4) {
+    const point = from.pos.add(direction.scale(d));
+
+    const blocked = get("barrier").some(b => {
+      const bPos = b.pos;
+      const bW = b.width || 10;
+      const bH = b.height || 10;
+
+      return (
+        point.x >= bPos.x &&
+        point.x <= bPos.x + bW &&
+        point.y >= bPos.y &&
+        point.y <= bPos.y + bH
+      );
+    });
+
+    if (blocked) return false;
   }
+  return true;
+}
 
   // === THROTTLE ALLY/ENEMY SCANNING ===
   a.scanTimer = (a.scanTimer || 0) + dt();
