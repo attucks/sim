@@ -26,5 +26,27 @@ function scaleColor(color, factor) {
   );
 }
 function colorsMatch(c1, c2) {
-  return c1.r === c2.r && c1.g === c2.g && c1.b === c2.b;
+    if (!c1 || !c2) return false; // Safely handle undefined color
+    return c1.r === c2.r && c1.g === c2.g && c1.b === c2.b;
+}
+function clampToPen(entity) {
+  const buffer = 5; // optional padding so they don't stick exactly on wall
+
+  if (entity.pos.x < penX + buffer) {
+    entity.pos.x = penX + buffer;
+  }
+  if (entity.pos.x > penX + penWidth - buffer) {
+    entity.pos.x = penX + penWidth - buffer;
+  }
+  if (entity.pos.y < penY + buffer) {
+    entity.pos.y = penY + buffer;
+  }
+  if (entity.pos.y > penY + penHeight - buffer) {
+    entity.pos.y = penY + penHeight - buffer;
+  }
+}
+
+function familyColorToCSS(color) {
+  if (!color) return "white";
+  return `rgb(${color.r ?? 255}, ${color.g ?? 255}, ${color.b ?? 255})`;
 }

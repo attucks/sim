@@ -1,53 +1,76 @@
-function spawnAnimal(x = rand(penX + 40, penX + penWidth - 40), y = rand(penY + 40, penY + penHeight - 40), parent = null) {
-  const name = generateName();
-  const familyLine = parent ? [...parent.familyLine, name] : [name];
-  const familyColor = parent ? parent.familyColor : rgb(rand(50, 255), rand(50, 255), rand(50, 255)); // 🔥 PURE rgb()
+function spawnAnimal(parent = null) {
+  const spawnPos = parent
+    ? parent.pos.add(vec2(rand(-10, 10), rand(-10, 10)))
+    : vec2(rand(penX, penX + penWidth), rand(penY, penY + penHeight));
 
-const a = add([
-  sprite("creatureFront"), // Attach sprite ONCE
-  scale(1.5), // or whatever size you like
-  pos(x, y),
-  color(familyColor),
-  area(),
-  "animal",
-  {
-    dir: vec2(rand(-1, 1), rand(-1, 1)).unit(),
-    currentDirection: "front", 
-    hunger: 0,
-    satedTime: 0,
-    mode: "wander",
-    target: null,
-    alive: true,
-    hungerTime: 0,
+  const familyColor = parent ? parent.familyColor : rgb(rand(0, 255), rand(0, 255), rand(0, 255));
+  const parentName = parent ? parent.firstName : null;
+  const lastName = parent ? parent.firstName + "z" : null;
 
-    firstName: name,
-    lastName: parent ? parent.firstName + "z" : "",
-    parentName: parent ? parent.firstName : null,
-    offspring: [],
-    victims: [],
-    stats: { lifetime: 0, kids: 0, foods: 0, kills: 0 },
-    legacyBarriers: [],
-    familyLine,
-    familyColor,
-    bravery: rand(0.3, 1.0),
-    curiosity: rand(0.3, 1.0),
-    territorial: rand(0.3, 1.0),
-    greed: rand(0.3, 1.0),
-    legacyDesire: rand(0.3, 1.0),
-    lastLegacyTime: 0,
-    currentSprite: "creatureFront", // Start facing front
-    packMode: false, // initially not in a pack
+  const firstName = generateName(); // 👈 Generate name first
 
+  const a = add([
+    sprite("creatureFront"),
+    pos(spawnPos),
+    area(),
+    anchor("center"),
+    body(),
+    "animal",
+{
+  alive: true,
+  color: familyColor,
+  familyColor: familyColor,
+  firstName: firstName,
+  lastName: lastName,
+  parentName: parentName,
+  familyLine: parent ? [...parent.familyLine, parent.firstName, firstName] : [firstName],
+  stats: {
+    lifetime: 0,
+    kids: 0,
+    foods: 0,
+    kills: 0,
   },
-]);
+  satedTime: 0,
+  hunger: 0,
+  hungerTime: 0,
+  readyToBirth: false,
+  badge: null,
+  hasBadge: false,
+  victims: [],
+  offspring: [],
+  legacyBlocks: [],
+  legacyBarriers: [], // 🛠 ✅ ADD THIS
+  mode: "wander",
+  dir: vec2(rand(-1, 1), rand(-1, 1)).unit(),
+  greed: rand(0.5, 1.5),
+  curiosity: rand(0.5, 1.5),
+  territorial: rand(0.5, 1.5),
+  legacyDesire: rand(0.5, 1.5),
+  lastLegacyTime: 0,
+}
+
+  ]);
+
+  if (parent) {
+    parent.offspring.push(firstName);
+  }
+
+animalsStats.push({
+  firstName: a.firstName,
+  lastName: a.lastName,
+  parentName: a.parentName,
+  stats: a.stats,
+  victims: a.victims,
+  offspring: a.offspring,
+  familyColor: a.familyColor, // ✅ ADD THIS
+});
 
 
-
-
-  animalsStats.push(a);
-  if (parent) parent.offspring.push(name);
   return a;
 }
+
+
+
 
 
 
@@ -72,42 +95,47 @@ function spawnFoodAt(x, y) {
 }
 
 function spawnCorpse(x, y, cause = "normal") {
-  const char = cause === "starvation" ? "☠️" : "x";
+  const char = cause === "starvation" ? "☠️" : "☠️";
   const c = add([
     text(char, { size: 16 }),
     pos(x, y),
-    color(50, 50, 50),
+    color(255, 255, 255),
     area(),
     "corpse"
   ]);
   wait(corpseLifetime, () => destroy(c));
 }
-
 function killAnimal(a, cause = "normal") {
   a.alive = false;
   a.text = cause === "starvation" ? "☠️" : "☠️";
   a.color = rgb(255, 255, 255);
+
   spawnCorpse(a.pos.x, a.pos.y, cause);
 
   for (const barrier of a.legacyBarriers) destroy(barrier);
 
-  ancestorStats.push({
-    symbol: a.text,
-    name: `${a.firstName} ${a.lastName}`,
-    parent: a.parentName || "--",
-    offspring: [...a.offspring],
-    lifetime: a.stats.lifetime.toFixed(1),
-    kids: a.stats.kids,
-    foods: a.stats.foods,
-    kills: a.stats.kills,
-    magic: computeMagicNumber(a).toFixed(1),
-    victims: [...a.victims],
-  });
+ancestorStats.push({
+  symbol: a.text,
+  name: `${a.firstName} ${a.lastName}`,
+  parent: a.parentName || "--",
+  offspring: [...(a.offspring || [])],
+  lifetime: a.stats.lifetime.toFixed(1),
+  kids: a.stats.kids,
+  foods: a.stats.foods,
+  kills: a.stats.kills,
+  magic: computeMagicNumber(a).toFixed(1),
+  victims: [...(a.victims || [])],
+  familyColor: a.familyColor, // ✅ ADD THIS
+});
 
-  const idx = animalsStats.indexOf(a);
-  if (idx !== -1) animalsStats.splice(idx, 1);
+  // 🛠 Correctly remove from animalsStats
+  animalsStats = animalsStats.filter(s =>
+    !(s.firstName === a.firstName && s.lastName === a.lastName)
+  );
+
   destroy(a);
 }
+
 
 function generateLegacyColor(firstName, lastName) {
   let hash = 0;
@@ -124,7 +152,7 @@ function generateLegacyColor(firstName, lastName) {
 function leaveLegacyBlock(a) {
   const sx = Math.floor((a.pos.x - penX) / 10) * 10 + penX;
   const sy = Math.floor((a.pos.y - penY) / 10) * 10 + penY;
-  addNews(`${a.firstName} left a legacy`);
+ // addNews(`${a.firstName} left a legacy`);
 
 const legacyBlock = add([
   rect(10, 10),

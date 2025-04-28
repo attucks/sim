@@ -54,12 +54,12 @@ onCollide("animal", "animal", (a, b) => {
     if (rand(1) < chanceA) {
       a.victims.push(b.firstName + (b.lastName ? " " + b.lastName : ""));
       a.stats.kills++;
-      addNews(`${a.firstName} defeated ${b.firstName}`);
+     // addNews(`${a.firstName} defeated ${b.firstName}`);
       killAnimal(b);
     } else {
       b.victims.push(a.firstName + (a.lastName ? " " + a.lastName : ""));
       b.stats.kills++;
-      addNews(`${b.firstName} defeated ${a.firstName}`);
+     // addNews(`${b.firstName} defeated ${a.firstName}`);
       killAnimal(a);
     }
   }
@@ -82,7 +82,16 @@ onKeyPress("b", () => {
     const sx = Math.floor((m.x - penX) / 10) * 10 + penX;
     const sy = Math.floor((m.y - penY) / 10) * 10 + penY;
     if (!get("barrier").find(b => Math.abs(b.pos.x - sx) < 1 && Math.abs(b.pos.y - sy) < 1)) {
-      add([rect(barrierSize.x, barrierSize.y), pos(sx, sy), area(), color(150, 150, 255), outline(1), "barrier"]);
+     add([
+    rect(10, 10),
+    pos(sx, sy),
+    color(255, 255, 255),
+    area(),
+    //solid(),
+    "barrier",
+    { isNLB: true } // ← mark it!
+]);
+
     }
   }
 });

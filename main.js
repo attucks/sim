@@ -10,12 +10,16 @@ add([
   outline(4),
   color(50, 50, 50),
 ]);
+
+// Load sprites
 loadSprite("creatureFront", "sprites/front.png");
 loadSprite("creatureLeft", "sprites/left.png");
 loadSprite("creatureRight", "sprites/right.png");
-
 
 // Spawn initial animals
 for (let i = 0; i < 5; i++) {
   spawnAnimal();
 }
+
+// Now setup the UI
+//setupUI();
