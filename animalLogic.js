@@ -178,36 +178,6 @@ onUpdate("animal", (a) => {
     a.lastLegacyTime = a.stats.lifetime;
   }
 
-<<<<<<< HEAD
-  // === SPRITE UPDATE ===
-
-
-  /*
-=======
-  // === SPRITE UPDATE (only if moving enough) ===
->>>>>>> 20e7448d4017885b5de4e1353d44697061491e07
-  const threshold = 0.1;
-  if (Math.abs(a.dir.x) > Math.abs(a.dir.y)) {
-    if (a.dir.x > threshold && a.currentDirection !== "right") {
-      a.use(sprite("creatureRight"));
-      a.color = a.familyColor;
-      a.currentDirection = "right";
-    } else if (a.dir.x < -threshold && a.currentDirection !== "left") {
-      a.use(sprite("creatureLeft"));
-      a.color = a.familyColor;
-      a.currentDirection = "left";
-    }
-  } else {
-    if (Math.abs(a.dir.y) > threshold && a.currentDirection !== "front") {
-      a.use(sprite("creatureFront"));
-      a.color = a.familyColor;
-      a.currentDirection = "front";
-    }
-  }
-
-  clampToPen(a);
-});
-*/
 
 
 
