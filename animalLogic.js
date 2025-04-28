@@ -88,11 +88,18 @@ onUpdate("animal", (a) => {
 function tryMove(dirVec, speed) {
   const nextPos = a.pos.add(dirVec.unit().scale(speed * dt()));
 
-  const collision = testRect({
-    pos: nextPos,
-    width: a.width,
-    height: a.height,
-  }, (obj) => obj.is("barrier"));
+  const collision = get("barrier").some(b => {
+    if (!b.area) return false;
+    const bPos = b.pos;
+    const bSize = vec2(b.width || 10, b.height || 10); // Default size fallback
+
+    return (
+      nextPos.x < bPos.x + bSize.x &&
+      nextPos.x + a.width > bPos.x &&
+      nextPos.y < bPos.y + bSize.y &&
+      nextPos.y + a.height > bPos.y
+    );
+  });
 
   if (!collision) {
     a.move(dirVec.scale(speed));
@@ -102,6 +109,7 @@ function tryMove(dirVec, speed) {
     }
   }
 }
+
 
   if (a.mode === "hunt" && a.target) {
     tryMove(a.target.pos.sub(a.pos), animalSpeed);
