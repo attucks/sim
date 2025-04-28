@@ -4,7 +4,7 @@ function spawnAnimal(x = rand(penX + 40, penX + penWidth - 40), y = rand(penY + 
   const familyColor = parent ? parent.familyColor : rgb(rand(50, 255), rand(50, 255), rand(50, 255)); // 🔥 PURE rgb()
 
 const a = add([
-  sprite("🧝"), // Attach sprite ONCE
+  text("🧝"), // Attach sprite ONCE
   scale(1.5), // or whatever size you like
   pos(x, y),
   color(familyColor),
