@@ -1,40 +1,110 @@
-onUpdate("animal", (a) => {
-  if (!a.alive) return;
+function tryMove(a, dirVec, speed) {
+  const moveStep = dirVec.unit().scale(speed);
+  const nextPos = a.pos.add(moveStep.scale(dt()));
 
-  // === UTIL: Line of Sight ===
-function hasLineOfSight(from, to) {
-  const direction = to.pos.sub(from.pos).unit();
-  const distance = from.pos.dist(to.pos);
+  const collision = get("barrier").some(b => {
+    const bPos = b.pos;
+    const bW = b.width || 10;
+    const bH = b.height || 10;
+    return (
+      nextPos.x < bPos.x + bW &&
+      nextPos.x + a.width > bPos.x &&
+      nextPos.y < bPos.y + bH &&
+      nextPos.y + a.height > bPos.y
+    );
+  });
 
-  for (let d = 0; d < distance; d += 4) {
-    const point = from.pos.add(direction.scale(d));
-
-    const blocked = get("barrier").some(b => {
+  if (!collision) {
+    a.move(moveStep);
+  } else {
+    const slideX = vec2(moveStep.x, 0);
+    const nextPosX = a.pos.add(slideX.scale(dt()));
+    const blockedX = get("barrier").some(b => {
       const bPos = b.pos;
       const bW = b.width || 10;
       const bH = b.height || 10;
-
       return (
-        point.x >= bPos.x &&
-        point.x <= bPos.x + bW &&
-        point.y >= bPos.y &&
-        point.y <= bPos.y + bH
+        nextPosX.x < bPos.x + bW &&
+        nextPosX.x + a.width > bPos.x &&
+        a.pos.y < bPos.y + bH &&
+        a.pos.y + a.height > bPos.y
       );
     });
+    if (!blockedX) {
+      a.move(slideX);
+      return;
+    }
 
-    if (blocked) return false;
+    const slideY = vec2(0, moveStep.y);
+    const nextPosY = a.pos.add(slideY.scale(dt()));
+    const blockedY = get("barrier").some(b => {
+      const bPos = b.pos;
+      const bW = b.width || 10;
+      const bH = b.height || 10;
+      return (
+        a.pos.x < bPos.x + bW &&
+        a.pos.x + a.width > bPos.x &&
+        nextPosY.y < bPos.y + bH &&
+        nextPosY.y + a.height > bPos.y
+      );
+    });
+    if (!blockedY) {
+      a.move(slideY);
+      return;
+    }
+
+    if (a.mode === "wander") {
+      a.dir = vec2(rand(-1, 1), rand(-1, 1)).unit();
+    }
   }
-  return true;
 }
 
-  // === THROTTLE ALLY/ENEMY SCANNING ===
+function findTarget(a) {
+  const foods = get("food");
+  const others = get("animal").filter(x => x !== a && x.alive);
+
+  let closestFood = null, foodDist = Infinity;
+  let closestPrey = null, preyDist = Infinity;
+
+  for (const f of foods) {
+    const dist = a.pos.dist(f.pos);
+    if (dist < foodDist) {
+      closestFood = f;
+      foodDist = dist;
+    }
+  }
+
+  for (const o of others) {
+    if (areRelatives(a, o)) continue;
+    const dist = a.pos.dist(o.pos);
+    if (dist < preyDist) {
+      closestPrey = o;
+      preyDist = dist;
+    }
+  }
+
+  if (closestFood && (!closestPrey || foodDist < preyDist)) {
+    a.target = closestFood;
+  } else if (closestPrey) {
+    a.target = closestPrey;
+    closestPrey.mode = "flee";
+    closestPrey.target = a;
+  } else {
+    a.target = null;
+  }
+}
+
+onUpdate("animal", (a) => {
+  if (!a.alive) return;
+
+  // === SCAN ALLIES + ENEMIES ===
   a.scanTimer = (a.scanTimer || 0) + dt();
   if (a.scanTimer > 1) {
     a.allies = get("animal").filter(o =>
-      o !== a && areRelatives(a, o) && o.alive && hasLineOfSight(a, o)
+      o !== a && areRelatives(a, o) && o.alive
     );
     a.enemies = get("animal").filter(o =>
-      o !== a && !areRelatives(a, o) && o.alive && hasLineOfSight(a, o)
+      o !== a && !areRelatives(a, o) && o.alive
     );
     a.scanTimer = 0;
   }
@@ -52,7 +122,7 @@ function hasLineOfSight(from, to) {
     a.target = nearestEnemy;
   }
 
-  // === BASIC STATE UPDATES ===
+  // === BASIC STATS ===
   a.stats.lifetime += dt();
   a.hunger += dt() * hungerRate;
 
@@ -76,13 +146,13 @@ function hasLineOfSight(from, to) {
     findTarget(a);
   }
 
-  // === COLORING BASED ON MODE ===
+  // === COLOR BASED ON MODE ===
   const colorMultiplier = (a.mode === "wander") ? 1.0 :
     (a.mode === "hunt") ? 1.3 :
     (a.mode === "flee") ? 0.7 : 1.0;
   a.color = scaleColor(a.familyColor, colorMultiplier);
 
-  // === BADGE CREATION ===
+  // === BADGE ===
   if (a.stats.lifetime > goldAge && !a.hasBadge) {
     a.badge = add([
       rect(5, 5),
@@ -97,37 +167,11 @@ function hasLineOfSight(from, to) {
     a.badge.pos = vec2(a.pos.x, a.pos.y - 8);
   }
 
-  // === MOVEMENT (WITH BARRIER CHECK) ===
-function tryMove(dirVec, speed) {
-  const nextPos = a.pos.add(dirVec.unit().scale(speed * dt()));
-
-  const collision = get("barrier").some(b => {
-    if (!b.area) return false;
-    const bPos = b.pos;
-    const bSize = vec2(b.width || 10, b.height || 10); // Default size fallback
-
-    return (
-      nextPos.x < bPos.x + bSize.x &&
-      nextPos.x + a.width > bPos.x &&
-      nextPos.y < bPos.y + bSize.y &&
-      nextPos.y + a.height > bPos.y
-    );
-  });
-
-  if (!collision) {
-    a.move(dirVec.scale(speed));
-  } else {
-    if (a.mode === "wander") {
-      a.dir = vec2(rand(-1, 1), rand(-1, 1)).unit();
-    }
-  }
-}
-
-
+  // === MOVEMENT ===
   if (a.mode === "hunt" && a.target) {
-    tryMove(a.target.pos.sub(a.pos), animalSpeed);
+    tryMove(a, a.target.pos.sub(a.pos), animalSpeed);
   } else if (a.mode === "flee" && a.target) {
-    tryMove(a.pos.sub(a.target.pos), animalSpeed + 20);
+    tryMove(a, a.pos.sub(a.target.pos), animalSpeed + 20);
   } else if (a.mode === "wander") {
     if (a.allies && a.allies.length > 0) {
       const nearestAlly = a.allies.reduce((closest, ally) =>
@@ -137,35 +181,34 @@ function tryMove(dirVec, speed) {
       const distToAlly = a.pos.dist(nearestAlly.pos);
 
       if (distToAlly > 30) {
-        tryMove(nearestAlly.pos.sub(a.pos), animalSpeed * 0.4);
+        tryMove(a, nearestAlly.pos.sub(a.pos), animalSpeed * 0.4);
       } else if (rand(1) < a.curiosity) {
-        tryMove(vec2(rand(-1, 1), rand(-1, 1)).unit(), animalSpeed * 0.2);
+        tryMove(a, vec2(rand(-1, 1), rand(-1, 1)).unit(), animalSpeed * 0.2);
       }
     } else if (rand(1) < 0.6) {
-      tryMove(vec2(rand(-1, 1), rand(-1, 1)).unit(), animalSpeed * 0.3);
+      tryMove(a, vec2(rand(-1, 1), rand(-1, 1)).unit(), animalSpeed * 0.3);
     }
   }
 
   // === REPEL FROM BARRIERS + CORPSES ===
   a.repelTimer = (a.repelTimer || 0) + dt();
   if (a.repelTimer > 0.5) {
-    for (const b of get("barrier")) {
+    for (const b of [...get("barrier"), ...get("legacy")]) {  // 👈 updated here
       const dist = a.pos.dist(b.pos);
       if (dist < barrierRepelDistance) {
         const away = a.pos.sub(b.pos).unit();
-        tryMove(away, 20);
+        tryMove(a, away, 20);
       }
-      if (dist < 20 && !colorsMatch(a.familyColor, b.familyColor)) {
-        if (rand(1) < a.territorial * 0.3 && b.isLegacy) {
+      if (dist < 20 && b.isLegacy && !colorsMatch(a.familyColor, b.familyColor)) {
+        if (rand(1) < a.territorial * 0.3) {
           destroy(b);
-          // addNews(`${a.firstName} destroyed a legacy of ${b.creatorName || "unknown"}!`);
         }
       }
     }
     for (const c of get("corpse")) {
       if (a.pos.dist(c.pos) < corpseRepelDistance) {
         const away = a.pos.sub(c.pos).unit();
-        tryMove(away, 20);
+        tryMove(a, away, 20);
       }
     }
     a.repelTimer = 0;
@@ -186,7 +229,7 @@ function tryMove(dirVec, speed) {
     a.helpTimer = 0;
   }
 
-  // === BIRTH LOGIC ===
+  // === BIRTH ===
   if (a.hunger < 1) {
     a.satedTime += dt();
     if (a.satedTime > birthingTime) {
@@ -237,42 +280,4 @@ function tryMove(dirVec, speed) {
     leaveLegacyBlock(a);
     a.lastLegacyTime = a.stats.lifetime;
   }
-}); // end onUpdate
-
-// Find target for hunting or attacking
-function findTarget(a) {
-  const foods = get("food");
-  const others = get("animal").filter(x => x !== a && x.alive);
-
-  let closestFood = null, foodDist = Infinity;
-  let closestPrey = null, preyDist = Infinity;
-
-  for (const f of foods) {
-    if (!hasLineOfSight(a, f)) continue;
-    const dist = a.pos.dist(f.pos);
-    if (dist < foodDist) {
-      closestFood = f;
-      foodDist = dist;
-    }
-  }
-
-  for (const o of others) {
-    if (areRelatives(a, o)) continue;
-    if (!hasLineOfSight(a, o)) continue;
-    const dist = a.pos.dist(o.pos);
-    if (dist < preyDist) {
-      closestPrey = o;
-      preyDist = dist;
-    }
-  }
-
-  if (closestFood && (!closestPrey || foodDist < preyDist)) {
-    a.target = closestFood;
-  } else if (closestPrey) {
-    a.target = closestPrey;
-    closestPrey.mode = "flee";
-    closestPrey.target = a;
-  } else {
-    a.target = null;
-  }
-}
+});

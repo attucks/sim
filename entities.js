@@ -124,20 +124,22 @@ function generateLegacyColor(firstName, lastName) {
 function leaveLegacyBlock(a) {
   const sx = Math.floor((a.pos.x - penX) / 10) * 10 + penX;
   const sy = Math.floor((a.pos.y - penY) / 10) * 10 + penY;
-  addNews(`${a.firstName} left a legacy`);
 
-const legacyBlock = add([
-  rect(10, 10),
-  pos(sx, sy),
-  area(),
-  color(a.familyColor),
-  outline(1),
-  "barrier",
-  {
-    familyColor: a.familyColor, // ✅ Track owner family
-  }
-]);
+//  addNews(`${a.firstName} left a legacy`);
 
+  const legacyBlock = add([
+    color(a.familyColor),        // ✅ color first
+    text("🍄", { size: 18 }),     // ✅ then text
+    pos(sx, sy),
+    anchor("center"),
+    area({ shape: new Rect(vec2(0), 18, 18) }),
+    "legacy",
+    {
+      familyColor: a.familyColor,
+      creatorName: a.firstName,
+      isLegacy: true,
+    },
+  ]);
 
   a.legacyBarriers.push(legacyBlock);
 
@@ -156,3 +158,5 @@ const legacyBlock = add([
     ]);
   }
 }
+
+
