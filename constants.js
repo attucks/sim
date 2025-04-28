@@ -21,7 +21,7 @@ window.starvationThreshold = 5;
 window.starvationTimeLimit = 10;
 window.goldAge = 60;
 
-window.maxPopulation = 100; 
+window.maxPopulation = 25; 
 
 // Data tracking
 window.animalsStats = [];
