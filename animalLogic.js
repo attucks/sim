@@ -144,15 +144,19 @@ onUpdate("animal", (a) => {
     a.satedTime = 0;
   }
 
-  if (a.readyToBirth && a.hunger > birthingHungerThreshold) {
-    if (get("animal").length < maxPopulation) {
-      spawnAnimal(a);
-      a.readyToBirth = false;
-      a.birthTimer = 0;
-    } else {
-      a.birthTimer = 0;
-    }
+if (a.readyToBirth && a.hunger > birthingHungerThreshold) {
+  if (get("animal").length < maxPopulation) {
+    // spawn at explicit x,y (near the parent):
+    const cx = a.pos.x + rand(-20, 20);
+    const cy = a.pos.y + rand(-20, 20);
+    const child = spawnAnimal(cx, cy, a);
+    a.readyToBirth = false;
+    a.birthTimer   = 0;
+  } else {
+    a.birthTimer = 0;
   }
+}
+
 
   // === BORDER CHECKING ===
   const boundsMargin = 5;
