@@ -4,11 +4,12 @@ function spawnAnimal(x = rand(penX + 40, penX + penWidth - 40), y = rand(penY + 
   const familyColor = parent ? parent.familyColor : rgb(rand(50, 255), rand(50, 255), rand(50, 255)); // 🔥 PURE rgb()
 
 const a = add([
-  text("🧝"), // Attach sprite ONCE
-  scale(.5), // or whatever size you like
+  text("🧝", { size: 16 }), // 👈 set emoji size clearly (before scaling)
+  //scale(0.5), // ⬅️ scale down for display
   pos(x, y),
   color(familyColor),
-  area(),
+  area({ shape: new Rect(vec2(0), 16, 16) }), // ✅ MANUAL hitbox: 16x16 matches scaled size
+  anchor("center"), // ✅ optional but helps collision to center
   "animal",
   {
     dir: vec2(rand(-1, 1), rand(-1, 1)).unit(),
@@ -19,7 +20,8 @@ const a = add([
     target: null,
     alive: true,
     hungerTime: 0,
-
+attackTimer: 0,
+attackCooldown: rand(0.8, 1.2),
     firstName: name,
     lastName: parent ? parent.firstName + "z" : "",
     parentName: parent ? parent.firstName : null,
@@ -37,7 +39,8 @@ const a = add([
     lastLegacyTime: 0,
     //currentSprite: "creatureFront", // Start facing front
     packMode: false, // initially not in a pack
-    health: 100
+    health: 100,
+    targetPos: null,
 
   },
 ]);
@@ -77,7 +80,7 @@ function spawnCorpse(x, y, cause = "normal") {
   const c = add([
     text(char, { size: 16 }),
     pos(x, y),
-    color(50, 50, 50),
+    color(255, 255, 255),
     area(),
     "corpse"
   ]);
@@ -123,8 +126,10 @@ function generateLegacyColor(firstName, lastName) {
 }
 
 function leaveLegacyBlock(a) {
-  const sx = Math.floor((a.pos.x - penX) / 10) * 10 + penX;
-  const sy = Math.floor((a.pos.y - penY) / 10) * 10 + penY;
+const jitter = () => rand(-2, 2);
+const sx = Math.round((a.pos.x - penX) / 10) * 10 + penX + jitter();
+const sy = Math.round((a.pos.y - penY) / 10) * 10 + penY + jitter();
+
 
 //  addNews(`${a.firstName} left a legacy`);
 

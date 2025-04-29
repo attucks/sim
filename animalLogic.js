@@ -1,3 +1,18 @@
+const tileSize = 10;
+
+function snapToGrid(pos) {
+  return vec2(
+    Math.round(pos.x / tileSize) * tileSize,
+    Math.round(pos.y / tileSize) * tileSize
+  );
+}
+
+function pickGridDirection() {
+  const dirs = [vec2(1, 0), vec2(-1, 0), vec2(0, 1), vec2(0, -1)];
+  return dirs[Math.floor(rand(0, dirs.length))].scale(tileSize);
+}
+
+
 // === VISUAL FEEDBACK ===
 
 function showDamage(a) {
@@ -55,9 +70,9 @@ function traitsCompatible(a, b) {
   const curiosityDiff = Math.abs(a.curiosity - b.curiosity);
 
   return (
-    greedDiff <= 0.5 &&
-    territorialDiff <= 0.5 &&
-    curiosityDiff <= 0.5
+    greedDiff <= 0.2 &&
+    territorialDiff <= 0.2 &&
+    curiosityDiff <= 0.2
   );
 }
 
@@ -134,9 +149,37 @@ function tryMove(a, dirVec, speed) {
       return;
     }
 
-    if (a.mode === "wander") {
-      a.dir = vec2(rand(-1, 1), rand(-1, 1)).unit();
+// === GRID-BASED WANDER ===
+if (a.mode === "wander") {
+  // If no target or we've reached the target, pick a new one
+  if (!a.targetPos || a.pos.dist(a.targetPos) < 0.5) {
+    const newPos = a.pos.add(pickGridDirection());
+
+    // Clamp and snap to grid
+    const clamped = vec2(
+      clamp(newPos.x, penX + 10, penX + penWidth - 10),
+      clamp(newPos.y, penY + 10, penY + penHeight - 10)
+    );
+
+    a.targetPos = snapToGrid(clamped);
+  }
+
+  // Only move if a valid target exists
+  if (a.targetPos) {
+    const delta = a.targetPos.sub(a.pos);
+    const step = delta.unit().scale(animalSpeed * dt());
+
+    // Prevent overshooting
+    if (step.len() > delta.len()) {
+      a.pos = a.targetPos.clone(); // Snap exactly
+      a.targetPos = null;          // Clear target so it re-picks
+    } else {
+      a.move(step);
     }
+  }
+}
+
+
   }
 }
 
@@ -180,7 +223,8 @@ function findTarget(a) {
 // === MAIN UPDATE ===
 
 onUpdate("animal", (a) => {
-  if (!a.alive) return;
+   if (isPaused || !a.alive) return;
+  if (simTick % simSkipFrames !== 0) return;
 
   a.scanTimer = (a.scanTimer || 0) + dt();
   if (a.scanTimer > 1) {
@@ -221,18 +265,30 @@ onUpdate("animal", (a) => {
   }
 
   // === FIGHTING ===
-  if (a.target && a.mode === "hunt" && a.pos.dist(a.target.pos) < 10) {
-    const damage = rand(5, 15);
-    a.target.health -= damage;
-    showDamage(a.target);
-    addNews(`${a.firstName} attacks ${a.target.firstName} for ${Math.floor(damage)} damage!`);
+// update attack timer
+a.attackTimer = (a.attackTimer || 0) + dt();
 
-    if (a.target.health <= 0) {
-      killAnimal(a.target, "defeated");
-      a.target = null;
-      a.mode = "wander";
+if (a.target && a.mode === "hunt" && a.pos.dist(a.target.pos) < 10) {
+  if (a.attackTimer >= a.attackCooldown) {
+    a.attackTimer = 0; // reset timer
+
+    if (rand(1) > 0.2) { // 80% chance to land the hit
+      const damage = rand(5, 15);
+      a.target.health -= damage;
+      showDamage(a.target);
+      addNews(`${a.firstName} hits ${a.target.firstName} for ${Math.floor(damage)} damage!`);
+
+      if (a.target.health <= 0) {
+        killAnimal(a.target, "defeated");
+        a.target = null;
+        a.mode = "wander";
+      }
+    } else {
+      addNews(`${a.firstName} missed ${a.target.firstName}!`);
     }
   }
+}
+
 
   const colorMultiplier = (a.mode === "wander") ? 1.0 :
     (a.mode === "hunt") ? 1.3 :
