@@ -6,7 +6,7 @@ window.penX = 20;
 window.penY = 20;
 window.penWidth = 760;
 window.penHeight = 560;
-
+window.familyAlliances = {}
 // Speeds and gameplay mechanics
 window.animalSpeed = 40;
 window.spawnFoodInterval = 2;

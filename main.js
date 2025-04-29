@@ -17,7 +17,7 @@ loadSprite("creatureLeft", "sprites/left.png");
 loadSprite("creatureRight", "sprites/right.png");
 
 // Spawn initial animals
-for (let i = 0; i < 5; i++) {
+for (let i = 0; i < 15; i++) {
   spawnAnimal();
 }
 

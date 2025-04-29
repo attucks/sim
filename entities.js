@@ -37,6 +37,7 @@ const a = add([
     lastLegacyTime: 0,
     //currentSprite: "creatureFront", // Start facing front
     packMode: false, // initially not in a pack
+    health: 100
 
   },
 ]);

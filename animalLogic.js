@@ -1,3 +1,84 @@
+// === VISUAL FEEDBACK ===
+
+function showDamage(a) {
+  add([
+    text("💥", { size: 16 }),
+    pos(a.pos.x, a.pos.y - 10),
+    color(255, 0, 0),
+    anchor("center"),
+    lifespan(0.6, { fade: 0.4 }),
+    move(UP, 20),
+  ]);
+}
+
+function showAlliance(a, b) {
+  for (const animal of [a, b]) {
+    add([
+      text("🤝", { size: 16 }),
+      pos(animal.pos.x, animal.pos.y - 12),
+      color(0, 200, 255),
+      anchor("center"),
+      lifespan(1, { fade: 0.5 }),
+      move(UP, 10),
+    ]);
+  }
+}
+
+function showBirth(a) {
+  add([
+    text("🐣", { size: 16 }),
+    pos(a.pos.x, a.pos.y - 10),
+    anchor("center"),
+    lifespan(1, { fade: 0.5 }),
+    move(UP, 10),
+  ]);
+}
+
+// === ALLIANCES ===
+
+function findClosestEnemy(a) {
+  const enemies = get("animal").filter(o => o !== a && !areRelatives(a, o) && o.alive);
+  if (enemies.length === 0) return null;
+  return enemies.reduce((closest, o) => a.pos.dist(o.pos) < a.pos.dist(closest.pos) ? o : closest, enemies[0]);
+}
+
+function formAlliance(familyA, familyB) {
+  if (!familyAlliances[familyA]) familyAlliances[familyA] = [];
+  if (!familyAlliances[familyB]) familyAlliances[familyB] = [];
+  if (!familyAlliances[familyA].includes(familyB)) familyAlliances[familyA].push(familyB);
+  if (!familyAlliances[familyB].includes(familyA)) familyAlliances[familyB].push(familyA);
+}
+
+function traitsCompatible(a, b) {
+  const greedDiff = Math.abs(a.greed - b.greed);
+  const territorialDiff = Math.abs(a.territorial - b.territorial);
+  const curiosityDiff = Math.abs(a.curiosity - b.curiosity);
+
+  return (
+    greedDiff <= 0.5 &&
+    territorialDiff <= 0.5 &&
+    curiosityDiff <= 0.5
+  );
+}
+
+function maybeFormAlliance(a) {
+  const potentialAllies = get("animal").filter(o =>
+    o !== a &&
+    !areRelatives(a, o) &&
+    a.pos.dist(o.pos) < 80
+  );
+
+  for (const o of potentialAllies) {
+    if (traitsCompatible(a, o)) {
+      formAlliance(a.familyColor, o.familyColor);
+      addNews(`${a.firstName}'s family allied with ${o.firstName}'s family!`);
+      showAlliance(a, o);
+    }
+  }
+}
+
+// === MOVEMENT ===
+
 function tryMove(a, dirVec, speed) {
   const moveStep = dirVec.unit().scale(speed);
   const nextPos = a.pos.add(moveStep.scale(dt()));
@@ -10,7 +91,7 @@ function tryMove(a, dirVec, speed) {
       nextPos.x < bPos.x + bW &&
       nextPos.x + a.width > bPos.x &&
       nextPos.y < bPos.y + bH &&
-      nextPos.y + a.height > bPos.y
+      a.pos.y + a.height > bPos.y
     );
   });
 
@@ -59,6 +140,8 @@ function tryMove(a, dirVec, speed) {
   }
 }
 
+// === TARGETING ===
+
 function findTarget(a) {
   const foods = get("food");
   const others = get("animal").filter(x => x !== a && x.alive);
@@ -94,35 +177,18 @@ function findTarget(a) {
   }
 }
 
+// === MAIN UPDATE ===
+
 onUpdate("animal", (a) => {
   if (!a.alive) return;
 
-  // === SCAN ALLIES + ENEMIES ===
   a.scanTimer = (a.scanTimer || 0) + dt();
   if (a.scanTimer > 1) {
-    a.allies = get("animal").filter(o =>
-      o !== a && areRelatives(a, o) && o.alive
-    );
-    a.enemies = get("animal").filter(o =>
-      o !== a && !areRelatives(a, o) && o.alive
-    );
+    a.allies = get("animal").filter(o => o !== a && areRelatives(a, o) && o.alive);
+    a.enemies = get("animal").filter(o => o !== a && !areRelatives(a, o) && o.alive);
     a.scanTimer = 0;
   }
 
-  // === PACK DETECTION ===
-  a.packMode = (a.allies && a.allies.length >= 16);
-
-  // === HUNT TARGET IF PACK ===
-  if (a.packMode && a.enemies && a.enemies.length > 0) {
-    const nearestEnemy = a.enemies.reduce((closest, enemy) =>
-      a.pos.dist(enemy.pos) < a.pos.dist(closest.pos) ? enemy : closest,
-      a.enemies[0]
-    );
-    a.mode = "hunt";
-    a.target = nearestEnemy;
-  }
-
-  // === BASIC STATS ===
   a.stats.lifetime += dt();
   a.hunger += dt() * hungerRate;
 
@@ -135,24 +201,44 @@ onUpdate("animal", (a) => {
     a.hungerTime = 0;
   }
 
-  // === TARGET VALIDATION ===
   if (a.target && !a.target.exists()) {
     a.target = null;
     a.mode = "wander";
   }
 
-  if (a.hunger > (3 - a.greed) && a.mode !== "hunt") {
-    a.mode = "hunt";
+  if (a.hunger > (3 - a.greed)) {
     findTarget(a);
+
+    if (a.target) {
+      if (a.target.is("food")) {
+        a.mode = "hunt";
+      } else if (a.target.is("animal")) {
+        a.mode = "hunt";
+      }
+    } else {
+      a.mode = "wander";
+    }
   }
 
-  // === COLOR BASED ON MODE ===
+  // === FIGHTING ===
+  if (a.target && a.mode === "hunt" && a.pos.dist(a.target.pos) < 10) {
+    const damage = rand(5, 15);
+    a.target.health -= damage;
+    showDamage(a.target);
+    addNews(`${a.firstName} attacks ${a.target.firstName} for ${Math.floor(damage)} damage!`);
+
+    if (a.target.health <= 0) {
+      killAnimal(a.target, "defeated");
+      a.target = null;
+      a.mode = "wander";
+    }
+  }
+
   const colorMultiplier = (a.mode === "wander") ? 1.0 :
     (a.mode === "hunt") ? 1.3 :
     (a.mode === "flee") ? 0.7 : 1.0;
   a.color = scaleColor(a.familyColor, colorMultiplier);
 
-  // === BADGE ===
   if (a.stats.lifetime > goldAge && !a.hasBadge) {
     a.badge = add([
       rect(5, 5),
@@ -190,10 +276,10 @@ onUpdate("animal", (a) => {
     }
   }
 
-  // === REPEL FROM BARRIERS + CORPSES ===
+  // === REPEL ===
   a.repelTimer = (a.repelTimer || 0) + dt();
   if (a.repelTimer > 0.5) {
-    for (const b of [...get("barrier"), ...get("legacy")]) {  // 👈 updated here
+    for (const b of [...get("barrier"), ...get("legacy")]) {
       const dist = a.pos.dist(b.pos);
       if (dist < barrierRepelDistance) {
         const away = a.pos.sub(b.pos).unit();
@@ -229,6 +315,12 @@ onUpdate("animal", (a) => {
     a.helpTimer = 0;
   }
 
+  // === FLEE IF LOW HEALTH ===
+  if (a.health < 30 && a.mode !== "flee") {
+    a.mode = "flee";
+    a.target = findClosestEnemy(a);
+  }
+
   // === BIRTH ===
   if (a.hunger < 1) {
     a.satedTime += dt();
@@ -243,7 +335,8 @@ onUpdate("animal", (a) => {
     if (get("animal").length < maxPopulation) {
       const cx = a.pos.x + rand(-20, 20);
       const cy = a.pos.y + rand(-20, 20);
-      spawnAnimal(cx, cy, a);
+      const child = spawnAnimal(cx, cy, a);
+      showBirth(child);
       a.readyToBirth = false;
       a.birthTimer = 0;
     } else {
@@ -270,7 +363,7 @@ onUpdate("animal", (a) => {
     if (a.mode === "wander") a.dir.y *= -1;
   }
 
-  // === LEGACY BLOCK CREATION ===
+  // === LEGACY CREATION ===
   const legacyChance = (a.territorial + a.legacyDesire) / 2;
   if (
     a.stats.lifetime > goldAge &&
@@ -279,5 +372,12 @@ onUpdate("animal", (a) => {
   ) {
     leaveLegacyBlock(a);
     a.lastLegacyTime = a.stats.lifetime;
+  }
+
+  // === FORM ALLIANCES ===
+  a.allianceTimer = (a.allianceTimer || 0) + dt();
+  if (a.allianceTimer > 5) {
+    maybeFormAlliance(a);
+    a.allianceTimer = 0;
   }
 });

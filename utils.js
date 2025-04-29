@@ -16,7 +16,10 @@ function addNews(message) {
   }
 }
 function areRelatives(a, b) {
-  return a.familyLine.some(name => b.familyLine.includes(name));
+  if (a.familyColor === b.familyColor) return true;
+  if (familyAlliances[a.familyColor] && familyAlliances[a.familyColor].includes(b.familyColor)) return true;
+  if (familyAlliances[b.familyColor] && familyAlliances[b.familyColor].includes(a.familyColor)) return true;
+  return false;
 }
 function scaleColor(color, factor) {
   return rgb(
