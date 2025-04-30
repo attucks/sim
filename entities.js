@@ -41,7 +41,7 @@ attackCooldown: rand(0.8, 1.2),
     packMode: false, // initially not in a pack
     health: 100,
     targetPos: null,
-
+     mission: { type: "none", target: null, timer: 0 },
   },
 ]);
 

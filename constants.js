@@ -16,15 +16,15 @@ window.birthingHungerThreshold = 1.5;
 window.corpseLifetime = 180;
 window.corpseRepelDistance = 20;
 window.barrierRepelDistance = 20;
-window.hungerRate = 0.06;
+window.hungerRate = 0.16;
 window.starvationThreshold = 5;
 window.starvationTimeLimit = 10;
 window.goldAge = 60;
 
-window.maxPopulation = 25; 
+window.maxPopulation = 50; 
  window.isPaused = false;
   window.simTick = 0;
-window.simSkipFrames = 2;
+window.simSkipFrames = 1;
 
 // Data tracking
 window.animalsStats = [];

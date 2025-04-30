@@ -53,3 +53,9 @@ function familyColorToCSS(color) {
   if (!color) return "white";
   return `rgb(${color.r ?? 255}, ${color.g ?? 255}, ${color.b ?? 255})`;
 }
+function findClosest(list, pos) {
+  if (!list || list.length === 0) return null;
+  return list.reduce((closest, item) => 
+    pos.dist(item.pos) < pos.dist(closest.pos) ? item : closest
+  );
+}

@@ -21,7 +21,7 @@ for (let i = 0; i < 12; i++) {
   spawnAnimal();
 }
 
-for (let i = 0; i < 25; i++) {
+for (let i = 0; i < 75; i++) {
   spawnFood();
 }
 
@@ -70,7 +70,7 @@ for (let y = penY; y <= penY + penHeight; y += barrierSize.y) {
 // Add interior cross-section barriers (with gaps)
 const centerX = penX + Math.floor(penWidth / 2);
 const centerY = penY + Math.floor(penHeight / 2);
-
+/*
 // Vertical wall (interior)
 for (let y = penY + 10; y < penY + penHeight; y += barrierSize.y) {
   if ((y - penY) % 60 === 0) continue; // Skip to leave a few gaps
@@ -96,6 +96,7 @@ for (let x = penX + 10; x < penX + penWidth; x += barrierSize.x) {
     { isNLB: true },
   ]);
 }
+*/
 onUpdate(() => {
   simTick++;
 });
