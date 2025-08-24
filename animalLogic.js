@@ -120,12 +120,12 @@ function traitsCompatible(a, b) {
   const greedDiff = Math.abs(a.greed - b.greed);
   const territorialDiff = Math.abs(a.territorial - b.territorial);
   const curiosityDiff = Math.abs(a.curiosity - b.curiosity);
-  return greedDiff <= 0.2 && territorialDiff <= 0.2 && curiosityDiff <= 0.2;
+  return greedDiff <= 0.2 && territorialDiff <= 0.4 && curiosityDiff <= 0.5;
 }
 
 function maybeFormAlliance(a) {
   const potentialAllies = get("animal").filter(o =>
-    o !== a && !areRelatives(a, o) && a.pos.dist(o.pos) < 80
+    o !== a && !areRelatives(a, o) && a.pos.dist(o.pos) < 600
   );
   for (const o of potentialAllies) {
     if (traitsCompatible(a, o)) {
