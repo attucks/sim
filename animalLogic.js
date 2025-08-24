@@ -26,7 +26,7 @@ const NUDGE_TIME = 0.15;            // seconds to apply nudge
 const SPEED_MULT = {
   eat: 10.5,
   attack: 5.25,
-  flee: 5.6,
+  flee: 5.2,
   patrol: 5.75,
   roam: 5.8,
   explore: 5.5,
@@ -442,7 +442,7 @@ function decideMission(a) {
   // 6) Attack enemy if available
   if (a.enemies && a.enemies.length > 0) {
     const nearEnemy = a.enemies.find(e => a.pos.dist(e.pos) < 80);
-    if (nearEnemy && rand(1) < 0.5) {
+    if (nearEnemy && rand(1) < 0.7) {
       a.mission = { type: "attack", target: nearEnemy, timer: 0 };
       return;
     }
