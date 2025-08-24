@@ -150,7 +150,7 @@ const sy = Math.round((a.pos.y - penY) / 10) * 10 + penY + jitter();
   a.legacyBarriers.push(legacyBlock);
 
   // Spawn food around it
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 15; i++) {
     const offsetX = rand(-30, 30);
     const offsetY = rand(-30, 30);
     const fx = clamp(sx + offsetX, penX + 10, penX + penWidth - 10);
