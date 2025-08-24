@@ -56,11 +56,40 @@ function distanceToNearestBarrier(p, w, h) {
   return minD;
 }
 
-function scaleColor([r, g, b], mult) {
-  // Assumes [r,g,b] 0..255
-  const clamp255 = (x) => Math.max(0, Math.min(255, Math.floor(x)));
-  return [clamp255(r * mult), clamp255(g * mult), clamp255(b * mult)];
+// Replace the old scaleColor with this
+function scaleColor(c, mult = 1) {
+  function toRGB(x) {
+    if (!x) return { r: 255, g: 255, b: 255 };
+
+    // Kaboom rgb() object: { r, g, b }
+    if (typeof x === "object" && "r" in x && "g" in x && "b" in x) {
+      return { r: Number(x.r) || 0, g: Number(x.g) || 0, b: Number(x.b) || 0 };
+    }
+
+    // Array-like: [r, g, b]
+    if (Array.isArray(x)) {
+      return { r: Number(x[0]) || 0, g: Number(x[1]) || 0, b: Number(x[2]) || 0 };
+    }
+
+    // Hex string: "#RRGGBB" / "RRGGBB" / "#RGB"
+    if (typeof x === "string") {
+      let s = x.trim();
+      if (s.startsWith("#")) s = s.slice(1);
+      if (s.length === 3) s = s.split("").map(ch => ch + ch).join("");
+      const v = parseInt(s.slice(0, 6), 16);
+      if (!Number.isNaN(v)) {
+        return { r: (v >> 16) & 255, g: (v >> 8) & 255, b: v & 255 };
+      }
+    }
+
+    return { r: 255, g: 255, b: 255 };
+  }
+
+  const clamp255 = (n) => Math.max(0, Math.min(255, Math.round(n)));
+  const { r, g, b } = toRGB(c);
+  return rgb(clamp255(r * mult), clamp255(g * mult), clamp255(b * mult));
 }
+
 
 // ===== Visual Feedback ========================================================
 
