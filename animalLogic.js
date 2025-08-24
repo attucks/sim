@@ -23,7 +23,7 @@ const NUDGE_TIME = 0.15;            // seconds to apply nudge
 
 // Per-mission speed multipliers (relative to animalSpeed)
 const SPEED_MULT = {
-  eat: 1.5,
+  eat: 5.5,
   attack: 1.25,
   flee: 1.6,
   patrol: 0.75,
