@@ -125,7 +125,7 @@ function traitsCompatible(a, b) {
 
 function maybeFormAlliance(a) {
   const potentialAllies = get("animal").filter(o =>
-    o !== a && !areRelatives(a, o) && a.pos.dist(o.pos) < 600
+    o !== a && !areRelatives(a, o) && a.pos.dist(o.pos) < 60
   );
   for (const o of potentialAllies) {
     if (traitsCompatible(a, o)) {
