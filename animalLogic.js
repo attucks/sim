@@ -25,7 +25,7 @@ const NUDGE_TIME = 0.15;            // seconds to apply nudge
 const SPEED_MULT = {
   eat: 10.5,
   attack: 5.25,
-  flee: 6.6,
+  flee: 5.6,
   patrol: 5.75,
   roam: 5.8,
   explore: 5.5,
