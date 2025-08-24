@@ -26,12 +26,12 @@ const NUDGE_TIME = 0.15;            // seconds to apply nudge
 // Per-mission speed multipliers (relative to animalSpeed)
 const SPEED_MULT = {
   eat: 10.5,
-  attack: 5.25,
-  flee: 5.2,
-  patrol: 5.75,
-  roam: 5.8,
-  explore: 5.5,
-  default: 3.75,
+  attack: 7.25,
+  flee: 7.2,
+  patrol: 7.75,
+  roam: 7.8,
+  explore: 7.5,
+  default: 7.75,
 };
 
 // Wander pattern tuning
