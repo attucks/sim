@@ -161,7 +161,7 @@ function traitsCompatible(a, b) {
   const territorialDiff = Math.abs(a.territorial - b.territorial);
   const curiosityDiff = Math.abs(a.curiosity - b.curiosity);
   // Slightly looser than your previous thresholds to create more alliances
-  return greedDiff <= 0.2 && territorialDiff <= 0.5 && curiosityDiff <= 0.9;
+  return greedDiff <= 0.1 && territorialDiff <= 0.1 && curiosityDiff <= 0.1;
 }
 
 function maybeFormAlliance(a) {
