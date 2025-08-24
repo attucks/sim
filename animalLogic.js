@@ -666,7 +666,7 @@ onUpdate("animal", (a) => {
       a.attackTimer = 0;
 
       if (rand(1) > 0.2) {
-        const damage = rand(5, 15);
+        const damage = rand(5, 100);
         a.mission.target.health -= damage;
         showDamage(a.mission.target);
         addNews(`${a.firstName} hits ${a.mission.target.firstName} for ${Math.floor(damage)} damage!`);
