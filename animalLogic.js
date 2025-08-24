@@ -6,6 +6,7 @@
 // - Personal space + gentle avoidance reduces bunching.
 // - Stuck detection with a small perpendicular nudge.
 // - Food-seeking prioritized: higher speed + no dampening while eating.
+// - Wander reworked: vertical half-step to border, then horizontal half-step, repeat.
 // - Preserves existing behavior and APIs.
 // ============================================================================
 
@@ -32,6 +33,12 @@ const SPEED_MULT = {
   default: 3.75,
 };
 
+// Wander pattern tuning
+const WANDER_MARGIN = 10;           // keep wander targets inside the pen by this margin
+const WANDER_HALF_RATIO = 0.5;      // go halfway toward the chosen border
+const WANDER_ARRIVE_EPS = 2;        // consider arrived if within this distance (px)
+const WANDER_MIN_STEP = 8;          // ensure each leg moves at least this much (px)
+
 // ===== Helpers ================================================================
 
 function snapToGrid(pos) {
@@ -53,7 +60,6 @@ function randomDirection() {
 
 function distanceToNearestBarrier(p, w, h) {
   // Simple nearest-distance estimation by scanning barriers
-  // (fast enough for modest counts; upgrade to spatial hashing if needed)
   let minD = Infinity;
   for (const b of get("barrier")) {
     const bx = b.pos.x, by = b.pos.y;
@@ -160,7 +166,7 @@ function traitsCompatible(a, b) {
   const greedDiff = Math.abs(a.greed - b.greed);
   const territorialDiff = Math.abs(a.territorial - b.territorial);
   const curiosityDiff = Math.abs(a.curiosity - b.curiosity);
-  // Slightly looser than your previous thresholds to create more alliances
+  // You currently use generous thresholds; keeping them as-is:
   return greedDiff <= 0.9 && territorialDiff <= 0.1 && curiosityDiff <= 0.9;
 }
 
@@ -211,6 +217,67 @@ function findTarget(a) {
     closestPrey.target = a;
   } else {
     a.target = null;
+  }
+}
+
+// ===== Wander logic (vertical half-step then horizontal half-step) ============
+
+function clampToPen(x, y) {
+  const left  = penX + WANDER_MARGIN;
+  const right = penX + penWidth - WANDER_MARGIN;
+  const top   = penY + WANDER_MARGIN;
+  const bot   = penY + penHeight - WANDER_MARGIN;
+  return vec2(
+    clamp(x, left, right),
+    clamp(y, top, bot),
+  );
+}
+
+function pickHalfwayTargetVertical(a) {
+  const topY = penY + WANDER_MARGIN;
+  const botY = penY + penHeight - WANDER_MARGIN;
+  const goUp = rand(1) < 0.5;
+  const borderY = goUp ? topY : botY;
+
+  let targetY = a.pos.y + (borderY - a.pos.y) * WANDER_HALF_RATIO;
+  // ensure minimum progress
+  if (Math.abs(targetY - a.pos.y) < WANDER_MIN_STEP) {
+    targetY = a.pos.y + Math.sign(borderY - a.pos.y) * WANDER_MIN_STEP;
+  }
+  const p = clampToPen(a.pos.x, targetY);
+  return vec2(p.x, p.y);
+}
+
+function pickHalfwayTargetHorizontal(a) {
+  const leftX = penX + WANDER_MARGIN;
+  const rightX = penX + penWidth - WANDER_MARGIN;
+  const goLeft = rand(1) < 0.5;
+  const borderX = goLeft ? leftX : rightX;
+
+  let targetX = a.pos.x + (borderX - a.pos.x) * WANDER_HALF_RATIO;
+  if (Math.abs(targetX - a.pos.x) < WANDER_MIN_STEP) {
+    targetX = a.pos.x + Math.sign(borderX - a.pos.x) * WANDER_MIN_STEP;
+  }
+  const p = clampToPen(targetX, a.pos.y);
+  return vec2(p.x, p.y);
+}
+
+function ensureWanderTarget(a) {
+  if (!a._wanderAxis) a._wanderAxis = "vertical"; // first leg is vertical
+  if (!a._wanderTarget) {
+    a._wanderTarget =
+      a._wanderAxis === "vertical"
+        ? pickHalfwayTargetVertical(a)
+        : pickHalfwayTargetHorizontal(a);
+  }
+}
+
+function advanceWanderIfArrived(a) {
+  if (!a._wanderTarget) return;
+  if (a.pos.dist(a._wanderTarget) <= WANDER_ARRIVE_EPS) {
+    // flip axis and pick the next leg on next frame
+    a._wanderAxis = (a._wanderAxis === "vertical") ? "horizontal" : "vertical";
+    a._wanderTarget = null;
   }
 }
 
@@ -311,31 +378,8 @@ function tryMove(a, dirVec, baseSpeed, opts = {}) {
     return;
   }
 
-  // === Grid-based wandering (unchanged logic; dt-safe) =======================
-  if (a.mode === "wander") {
-    if (!a.targetPos || a.pos.dist(a.targetPos) < 0.5) {
-      const newPos = a.pos.add(pickGridDirection());
-      const clamped = vec2(
-        clamp(newPos.x, penX + 10, penX + penWidth - 10),
-        clamp(newPos.y, penY + 10, penY + penHeight - 10)
-      );
-      a.targetPos = snapToGrid(clamped);
-    }
-
-    if (a.targetPos) {
-      const delta = a.targetPos.sub(a.pos);
-      const step = delta.len() > SLIDE_CHECK_EPS
-        ? delta.unit().scale(animalSpeed * dtv)
-        : vec2(0, 0);
-
-      if (step.len() > delta.len()) {
-        a.pos = a.targetPos.clone();
-        a.targetPos = null;
-      } else {
-        a.move(step);
-      }
-    }
-  }
+  // Removed the old grid-based wander here (no a.mode === "wander" block).
+  // Wander is now handled explicitly in the "explore" and default mission cases.
 }
 
 // ===== Missions ===============================================================
@@ -416,12 +460,12 @@ function decideMission(a) {
 
   // 8) Curious exploration
   if (a.curiosity > 0.5 && rand(1) < 0.6) {
-    a.mission = { type: "explore", target: randomDirection(), timer: 0 };
+    a.mission = { type: "explore", target: null, timer: 0 };
     return;
   }
 
   // 9) Fallback explore
-  a.mission = { type: "explore", target: randomDirection(), timer: 0 };
+  a.mission = { type: "explore", target: null, timer: 0 };
 }
 
 // ===== Main Update ============================================================
@@ -534,17 +578,38 @@ onUpdate("animal", (a) => {
     }
 
     case "explore": {
-      if (!a.mission.target || a.mission.timer > 4) {
-        a.mission = { type: "explore", target: randomDirection(), timer: 0 };
-      }
+      // New wander pattern: vertical half-step → horizontal half-step → repeat
+      ensureWanderTarget(a);
       const s = animalSpeed * (SPEED_MULT.explore ?? 1);
-      tryMove(a, a.mission.target, s);
+      if (a._wanderTarget) {
+        // If already at/near target, advance to next leg before moving
+        if (a.pos.dist(a._wanderTarget) <= WANDER_ARRIVE_EPS) {
+          advanceWanderIfArrived(a);
+          ensureWanderTarget(a);
+        }
+        if (a._wanderTarget) {
+          tryMove(a, a._wanderTarget.sub(a.pos), s);
+          // Check again after moving; if arrived, flip for next frame
+          advanceWanderIfArrived(a);
+        }
+      }
       break;
     }
 
     default: {
+      // Default also uses the wander pattern
+      ensureWanderTarget(a);
       const s = animalSpeed * (SPEED_MULT.default ?? 1);
-      tryMove(a, randomDirection(), s);
+      if (a._wanderTarget) {
+        if (a.pos.dist(a._wanderTarget) <= WANDER_ARRIVE_EPS) {
+          advanceWanderIfArrived(a);
+          ensureWanderTarget(a);
+        }
+        if (a._wanderTarget) {
+          tryMove(a, a._wanderTarget.sub(a.pos), s);
+          advanceWanderIfArrived(a);
+        }
+      }
     }
   }
 
@@ -696,7 +761,8 @@ onUpdate("animal", (a) => {
       tryMove(a, perp, NUDGE_SPEED);
     }
 
-    if (a.mode === "wander") a.targetPos = null;
+    // Reset wander leg to avoid getting stuck oscillating
+    a._wanderTarget = null;
   }
 
   a._prevPos = a.pos.clone();
