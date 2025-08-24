@@ -1,7 +1,7 @@
 onUpdate(() => {
 
 add([
-    text(`Build: 4.11`, { size: 12 }),
+    text(`Build: 4.10`, { size: 12 }),
     pos(10, 580), // Bottom-left corner, adjust if needed
    // layer("ui"),
     fixed(),
