@@ -101,6 +101,10 @@ function showAlliance(a, b) {
   }
 }
 
+function randomDirection() {
+  const v = vec2(rand(-4, 4), rand(-4, 4));
+  return v.len() < SLIDE_CHECK_EPS ? vec2(1, 0) : v.unit();
+}
 function showBirth(a) {
   add([
     text("🐣", { size: 16 }),
