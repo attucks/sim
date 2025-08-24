@@ -1,24 +1,36 @@
 // ============================================================================
 // Simulation: Movement, Missions, Alliances, and Feedback
 // Notes:
-// - All movement now consistently scales by dt().
-// - Added obstacle proximity dampening to reduce jitter at barriers.
-// - Increased personal space + gentle avoidance to reduce bunching.
-// - Added stuck detection with a small perpendicular nudge.
+// - All movement scales by dt().
+// - Obstacle proximity dampening reduces jitter near barriers.
+// - Personal space + gentle avoidance reduces bunching.
+// - Stuck detection with a small perpendicular nudge.
+// - Food-seeking prioritized: higher speed + no dampening while eating.
 // - Preserves existing behavior and APIs.
 // ============================================================================
 
 // ===== Config (safe to tweak) =================================================
 const tileSize = 10;
 
-const AVOID_RADIUS = 10;            // Personal space radius (was ~6)
-const SLIDE_CHECK_EPS = 0.0001;     // Numerical guard
-const OBSTACLE_NEAR_DIST = 12;      // Start damping speed near barriers
-const OBSTACLE_DAMP_MIN = 0.5;      // Minimum speed multiplier near obstacles
-const STUCK_DIST_EPS = 0.3;         // "Not moving" distance threshold
-const STUCK_TIME_LIMIT = 0.6;       // Seconds before applying nudge
-const NUDGE_SPEED = 40;             // Speed for unstick nudge
-const NUDGE_TIME = 0.15;            // Seconds to apply nudge
+const AVOID_RADIUS = 8;             // was 10; slightly less "polite" to avoid over-steer
+const SLIDE_CHECK_EPS = 0.0001;     // numerical guard
+const OBSTACLE_NEAR_DIST = 12;      // start damping speed near barriers
+const OBSTACLE_DAMP_MIN = 0.65;     // was 0.5; less harsh overall
+const STUCK_DIST_EPS = 0.3;         // "not moving" distance threshold
+const STUCK_TIME_LIMIT = 0.6;       // seconds before applying nudge
+const NUDGE_SPEED = 40;             // speed for unstick nudge
+const NUDGE_TIME = 0.15;            // seconds to apply nudge
+
+// Per-mission speed multipliers (relative to animalSpeed)
+const SPEED_MULT = {
+  eat: 1.5,
+  attack: 1.25,
+  flee: 1.6,
+  patrol: 0.75,
+  roam: 0.8,
+  explore: 0.5,
+  default: 0.75,
+};
 
 // ===== Helpers ================================================================
 
@@ -40,7 +52,7 @@ function randomDirection() {
 }
 
 function distanceToNearestBarrier(p, w, h) {
-  // Simple nearest distance estimation by scanning barriers
+  // Simple nearest-distance estimation by scanning barriers
   // (fast enough for modest counts; upgrade to spatial hashing if needed)
   let minD = Infinity;
   for (const b of get("barrier")) {
@@ -56,7 +68,7 @@ function distanceToNearestBarrier(p, w, h) {
   return minD;
 }
 
-// Replace the old scaleColor with this
+// Kaboom-safe color scaling (accepts kaboom rgb(), [r,g,b], or hex string)
 function scaleColor(c, mult = 1) {
   function toRGB(x) {
     if (!x) return { r: 255, g: 255, b: 255 };
@@ -89,7 +101,6 @@ function scaleColor(c, mult = 1) {
   const { r, g, b } = toRGB(c);
   return rgb(clamp255(r * mult), clamp255(g * mult), clamp255(b * mult));
 }
-
 
 // ===== Visual Feedback ========================================================
 
@@ -149,7 +160,8 @@ function traitsCompatible(a, b) {
   const greedDiff = Math.abs(a.greed - b.greed);
   const territorialDiff = Math.abs(a.territorial - b.territorial);
   const curiosityDiff = Math.abs(a.curiosity - b.curiosity);
-  return greedDiff <= 0.4 && territorialDiff <= 0.5 && curiosityDiff <= 0.6;
+  // Slightly looser than your previous thresholds to create more alliances
+  return greedDiff <= 0.3 && territorialDiff <= 0.5 && curiosityDiff <= 0.6;
 }
 
 function maybeFormAlliance(a) {
@@ -204,7 +216,12 @@ function findTarget(a) {
 
 // ===== Movement Core ==========================================================
 
-function tryMove(a, dirVec, baseSpeed) {
+/**
+ * tryMove(a, dirVec, baseSpeed, opts)
+ * opts.ignoreDampening = true to bypass obstacle speed damping (used when eating)
+ */
+function tryMove(a, dirVec, baseSpeed, opts = {}) {
+  const { ignoreDampening = false } = opts;
   const dtv = dt();
   if (!dtv) return;
 
@@ -212,14 +229,17 @@ function tryMove(a, dirVec, baseSpeed) {
   const dir = (dirVec && dirVec.len() > SLIDE_CHECK_EPS) ? dirVec.unit() : vec2(0, 0);
   if (dir.len() <= SLIDE_CHECK_EPS) return;
 
-  // Obstacle proximity speed dampening
-  const nearBarrierDist = distanceToNearestBarrier(a.pos, a.width, a.height);
-  const damp =
-    isFinite(nearBarrierDist) && nearBarrierDist < OBSTACLE_NEAR_DIST
-      ? Math.max(OBSTACLE_DAMP_MIN, nearBarrierDist / OBSTACLE_NEAR_DIST)
-      : 1.0;
+  // Obstacle proximity speed dampening (unless disabled)
+  let speed = baseSpeed;
+  if (!ignoreDampening) {
+    const nearBarrierDist = distanceToNearestBarrier(a.pos, a.width, a.height);
+    const damp =
+      isFinite(nearBarrierDist) && nearBarrierDist < OBSTACLE_NEAR_DIST
+        ? Math.max(OBSTACLE_DAMP_MIN, nearBarrierDist / OBSTACLE_NEAR_DIST)
+        : 1.0;
+    speed *= damp;
+  }
 
-  const speed = baseSpeed * damp;
   const moveStep = dir.scale(speed * dtv);
   const nextPos = a.pos.add(moveStep);
 
@@ -410,11 +430,24 @@ onUpdate("animal", (a) => {
   if (isPaused || !a.alive) return;
   if (simTick % simSkipFrames !== 0) return;
 
-  // Periodic scans (allies/enemies)
+  // Periodic scans (allies/enemies) + hungry re-target
   a.scanTimer = (a.scanTimer || 0) + dt();
-  if (a.scanTimer > 1) {
+  if (a.scanTimer > 0.5) { // scan a bit more often than before
     a.allies = get("animal").filter(o => o !== a && areRelatives(a, o) && o.alive);
     a.enemies = get("animal").filter(o => o !== a && !areRelatives(a, o) && o.alive);
+
+    // If hungry, aggressively retarget nearest food mid-mission
+    if (a.hunger > (3 - a.greed)) {
+      const foods = get("food");
+      if (foods.length) {
+        const nearestFood = foods.reduce(
+          (c, f) => (a.pos.dist(f.pos) < a.pos.dist(c.pos) ? f : c),
+          foods[0]
+        );
+        a.mission = { type: "eat", target: nearestFood, timer: 0 };
+      }
+    }
+
     a.scanTimer = 0;
   }
 
@@ -441,19 +474,32 @@ onUpdate("animal", (a) => {
 
   // === Movement by mission ===================================================
   switch (a.mission.type) {
-    case "eat":
-      if (a.mission.target) tryMove(a, a.mission.target.pos.sub(a.pos), animalSpeed);
+    case "eat": {
+      if (a.mission.target) {
+        const s = animalSpeed * (SPEED_MULT.eat ?? 1);
+        // ignore dampening so they don't crawl along walls chasing food
+        tryMove(a, a.mission.target.pos.sub(a.pos), s, { ignoreDampening: true });
+      }
       break;
+    }
 
-    case "attack":
-      if (a.mission.target) tryMove(a, a.mission.target.pos.sub(a.pos), animalSpeed);
+    case "attack": {
+      if (a.mission.target) {
+        const s = animalSpeed * (SPEED_MULT.attack ?? 1);
+        tryMove(a, a.mission.target.pos.sub(a.pos), s);
+      }
       break;
+    }
 
-    case "flee":
-      if (a.mission.target) tryMove(a, a.pos.sub(a.mission.target.pos), animalSpeed + 20);
+    case "flee": {
+      if (a.mission.target) {
+        const s = animalSpeed * (SPEED_MULT.flee ?? 1);
+        tryMove(a, a.pos.sub(a.mission.target.pos), s);
+      }
       break;
+    }
 
-    case "legacy":
+    case "legacy": {
       if (!a.hasJustPlacedLegacy) {
         leaveLegacyBlock(a);
         a.lastLegacyTime = a.stats.lifetime;
@@ -461,28 +507,45 @@ onUpdate("animal", (a) => {
       }
       a.mission.type = "none";
       break;
+    }
 
-    case "defend":
-      if (a.mission.target) tryMove(a, a.mission.target.pos.sub(a.pos), animalSpeed);
+    case "defend": {
+      if (a.mission.target) {
+        const s = animalSpeed * (SPEED_MULT.attack ?? 1);
+        tryMove(a, a.mission.target.pos.sub(a.pos), s);
+      }
       break;
+    }
 
-    case "patrol":
-      if (a.mission.target) tryMove(a, a.mission.target.pos.sub(a.pos), animalSpeed * 0.6);
+    case "patrol": {
+      if (a.mission.target) {
+        const s = animalSpeed * (SPEED_MULT.patrol ?? 1);
+        tryMove(a, a.mission.target.pos.sub(a.pos), s);
+      }
       break;
+    }
 
-    case "roam":
-      if (a.mission.target) tryMove(a, a.mission.target.pos.sub(a.pos), animalSpeed * 0.7);
+    case "roam": {
+      if (a.mission.target) {
+        const s = animalSpeed * (SPEED_MULT.roam ?? 1);
+        tryMove(a, a.mission.target.pos.sub(a.pos), s);
+      }
       break;
+    }
 
-    case "explore":
+    case "explore": {
       if (!a.mission.target || a.mission.timer > 4) {
         a.mission = { type: "explore", target: randomDirection(), timer: 0 };
       }
-      tryMove(a, a.mission.target, animalSpeed * 0.4);
+      const s = animalSpeed * (SPEED_MULT.explore ?? 1);
+      tryMove(a, a.mission.target, s);
       break;
+    }
 
-    default:
-      tryMove(a, randomDirection(), animalSpeed * 0.3);
+    default: {
+      const s = animalSpeed * (SPEED_MULT.default ?? 1);
+      tryMove(a, randomDirection(), s);
+    }
   }
 
   // === Attack logic ==========================================================
@@ -607,7 +670,6 @@ onUpdate("animal", (a) => {
   }
 
   // === Stuck detection & unstick nudge ======================================
-  // Track motion
   const prev = a._prevPos || a.pos.clone();
   const moved = a.pos.dist(prev);
 
@@ -616,7 +678,6 @@ onUpdate("animal", (a) => {
     a._stuckTimer = 0;
   }
 
-  // If stuck for a while, nudge perpendicular to last mission vector
   if (a._stuckTimer > STUCK_TIME_LIMIT) {
     a._stuckTimer = 0;
     const v =
@@ -631,12 +692,10 @@ onUpdate("animal", (a) => {
     const endTime = (a._nudgeUntil || 0) + NUDGE_TIME;
     a._nudgeUntil = time() + NUDGE_TIME;
 
-    // Apply within the window in subsequent frames
     if (time() < endTime) {
       tryMove(a, perp, NUDGE_SPEED);
     }
 
-    // For wanderers, reset grid target to encourage a new pick
     if (a.mode === "wander") a.targetPos = null;
   }
 
