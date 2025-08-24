@@ -83,10 +83,10 @@ onCollide("animal", "food", (a, f) => {
   if (!a.alive) return;
   destroy(f);
   a.hunger = 0;
-  a.mode = "wander";
-  a.target = null;
+    a.target = null;
   a.stats.foods++;
-  a.health = if(a.health<=100){ (a.health/2)+ a.health}else{100};
+  a.health = if(a.health<100){(a.health/2)+ a.health}else{100};
+  a.mode = "wander";
 });
 
 

@@ -7,6 +7,7 @@
 // - Stuck detection with a small perpendicular nudge.
 // - Food-seeking prioritized: higher speed + no dampening while eating.
 // - Wander reworked: vertical half-step to border, then horizontal half-step, repeat.
+// - Alliances use stable color keys; allied legacies are protected.
 // - Preserves existing behavior and APIs.
 // ============================================================================
 
@@ -58,6 +59,17 @@ function randomDirection() {
   return v.len() < SLIDE_CHECK_EPS ? vec2(1, 0) : v.unit();
 }
 
+function findClosest(list, fromPos) {
+  if (!list || list.length === 0) return null;
+  let best = list[0];
+  let bestD = fromPos.dist(best.pos);
+  for (let i = 1; i < list.length; i++) {
+    const d = fromPos.dist(list[i].pos);
+    if (d < bestD) { best = list[i]; bestD = d; }
+  }
+  return best;
+}
+
 function distanceToNearestBarrier(p, w, h) {
   // Simple nearest-distance estimation by scanning barriers
   let minD = Infinity;
@@ -74,38 +86,53 @@ function distanceToNearestBarrier(p, w, h) {
   return minD;
 }
 
-// Kaboom-safe color scaling (accepts kaboom rgb(), [r,g,b], or hex string)
-function scaleColor(c, mult = 1) {
-  function toRGB(x) {
-    if (!x) return { r: 255, g: 255, b: 255 };
+// ===== Color utils (scaling + stable alliance keys) ==========================
 
-    // Kaboom rgb() object: { r, g, b }
-    if (typeof x === "object" && "r" in x && "g" in x && "b" in x) {
-      return { r: Number(x.r) || 0, g: Number(x.g) || 0, b: Number(x.b) || 0 };
-    }
+function colorToRGB(c) {
+  if (!c) return { r: 255, g: 255, b: 255 };
 
-    // Array-like: [r, g, b]
-    if (Array.isArray(x)) {
-      return { r: Number(x[0]) || 0, g: Number(x[1]) || 0, b: Number(x[2]) || 0 };
-    }
-
-    // Hex string: "#RRGGBB" / "RRGGBB" / "#RGB"
-    if (typeof x === "string") {
-      let s = x.trim();
-      if (s.startsWith("#")) s = s.slice(1);
-      if (s.length === 3) s = s.split("").map(ch => ch + ch).join("");
-      const v = parseInt(s.slice(0, 6), 16);
-      if (!Number.isNaN(v)) {
-        return { r: (v >> 16) & 255, g: (v >> 8) & 255, b: v & 255 };
-      }
-    }
-
-    return { r: 255, g: 255, b: 255 };
+  // Kaboom rgb() object: { r, g, b }
+  if (typeof c === "object" && "r" in c && "g" in c && "b" in c) {
+    return { r: Number(c.r) || 0, g: Number(c.g) || 0, b: Number(c.b) || 0 };
   }
 
+  // Array-like: [r, g, b]
+  if (Array.isArray(c)) {
+    return { r: Number(c[0]) || 0, g: Number(c[1]) || 0, b: Number(c[2]) || 0 };
+  }
+
+  // Hex string
+  if (typeof c === "string") {
+    let s = c.trim();
+    if (s.startsWith("#")) s = s.slice(1);
+    if (s.length === 3) s = s.split("").map(ch => ch + ch).join("");
+    const v = parseInt(s.slice(0, 6), 16);
+    if (!Number.isNaN(v)) {
+      return { r: (v >> 16) & 255, g: (v >> 8) & 255, b: v & 255 };
+    }
+  }
+
+  return { r: 255, g: 255, b: 255 };
+}
+
+function colorKey(c) {
+  const { r, g, b } = colorToRGB(c);
+  return `${Math.round(r)}|${Math.round(g)}|${Math.round(b)}`;
+}
+
+// Safe color multiply that accepts kaboom color/array/hex
+function scaleColor(c, mult = 1) {
   const clamp255 = (n) => Math.max(0, Math.min(255, Math.round(n)));
-  const { r, g, b } = toRGB(c);
+  const { r, g, b } = colorToRGB(c);
   return rgb(clamp255(r * mult), clamp255(g * mult), clamp255(b * mult));
+}
+
+// Provide a tolerant colorsMatch if the project doesn't define one.
+if (typeof globalThis.colorsMatch !== "function") {
+  globalThis.colorsMatch = function(c1, c2) {
+    const a = colorToRGB(c1), b = colorToRGB(c2);
+    return a.r === b.r && a.g === b.g && a.b === b.b;
+  };
 }
 
 // ===== Visual Feedback ========================================================
@@ -144,7 +171,16 @@ function showBirth(a) {
   ]);
 }
 
-// ===== Alliances =============================================================
+// ===== Alliances (stable keys + allied checks) ===============================
+
+// Internal map: "r|g|b" -> Set("r|g|b")
+const __alliances = new Map();
+
+function areAlliedColors(c1, c2) {
+  const k1 = colorKey(c1), k2 = colorKey(c2);
+  const set = __alliances.get(k1);
+  return !!(set && set.has(k2));
+}
 
 function findClosestEnemy(a) {
   const enemies = get("animal").filter(o => o !== a && !areRelatives(a, o) && o.alive);
@@ -155,19 +191,32 @@ function findClosestEnemy(a) {
   );
 }
 
-function formAlliance(familyA, familyB) {
-  if (!familyAlliances[familyA]) familyAlliances[familyA] = [];
-  if (!familyAlliances[familyB]) familyAlliances[familyB] = [];
-  if (!familyAlliances[familyA].includes(familyB)) familyAlliances[familyA].push(familyB);
-  if (!familyAlliances[familyB].includes(familyA)) familyAlliances[familyB].push(familyA);
-}
-
+// Keep your existing trait gating
 function traitsCompatible(a, b) {
   const greedDiff = Math.abs(a.greed - b.greed);
   const territorialDiff = Math.abs(a.territorial - b.territorial);
   const curiosityDiff = Math.abs(a.curiosity - b.curiosity);
-  // You currently use generous thresholds; keeping them as-is:
   return greedDiff <= 0.9 && territorialDiff <= 0.1 && curiosityDiff <= 0.9;
+}
+
+// Upgraded: still populates the old familyAlliances object, but also
+// stores stable string keys so we can reliably check alliance later.
+function formAlliance(familyA, familyB) {
+  // Stable map for runtime checks
+  const kA = colorKey(familyA);
+  const kB = colorKey(familyB);
+  if (!__alliances.has(kA)) __alliances.set(kA, new Set());
+  if (!__alliances.has(kB)) __alliances.set(kB, new Set());
+  __alliances.get(kA).add(kB);
+  __alliances.get(kB).add(kA);
+
+  // Mirror into external store if you're using it elsewhere
+  if (typeof familyAlliances === "object" && familyAlliances !== null) {
+    familyAlliances[kA] = familyAlliances[kA] || [];
+    familyAlliances[kB] = familyAlliances[kB] || [];
+    if (!familyAlliances[kA].includes(kB)) familyAlliances[kA].push(kB);
+    if (!familyAlliances[kB].includes(kA)) familyAlliances[kB].push(kA);
+  }
 }
 
 function maybeFormAlliance(a) {
@@ -377,9 +426,6 @@ function tryMove(a, dirVec, baseSpeed, opts = {}) {
     // No slide possible → stop this frame
     return;
   }
-
-  // Removed the old grid-based wander here (no a.mode === "wander" block).
-  // Wander is now handled explicitly in the "explore" and default mission cases.
 }
 
 // ===== Missions ===============================================================
@@ -668,7 +714,13 @@ onUpdate("animal", (a) => {
         const away = a.pos.sub(b.pos).unit();
         tryMove(a, away, 20);
       }
-      if (dist < 20 && b.isLegacy && !colorsMatch(a.familyColor, b.familyColor)) {
+      // Prevent stomping allied legacies
+      if (
+        dist < 20 &&
+        b.isLegacy &&
+        !colorsMatch(a.familyColor, b.familyColor) &&
+        !areAlliedColors(a.familyColor, b.familyColor)
+      ) {
         if (rand(1) < a.territorial * 0.3) {
           destroy(b);
         }
