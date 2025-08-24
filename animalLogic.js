@@ -196,7 +196,7 @@ function traitsCompatible(a, b) {
   const greedDiff = Math.abs(a.greed - b.greed);
   const territorialDiff = Math.abs(a.territorial - b.territorial);
   const curiosityDiff = Math.abs(a.curiosity - b.curiosity);
-  return greedDiff <= 0.9 && territorialDiff <= 0.1 && curiosityDiff <= 0.9;
+  return greedDiff <= 0.6 && territorialDiff <= 0.01 && curiosityDiff <= 0.6;
 }
 
 // Upgraded: still populates the old familyAlliances object, but also
