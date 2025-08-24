@@ -21,7 +21,7 @@ window.starvationThreshold = 5;
 window.starvationTimeLimit = 10;
 window.goldAge = 60;
 
-window.maxPopulation = 50; 
+window.maxPopulation = 24; 
  window.isPaused = false;
   window.simTick = 0;
 window.simSkipFrames = 1;
