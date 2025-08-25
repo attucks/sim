@@ -143,7 +143,7 @@ function formAlliance(familyA, familyB) {
 }
 
 function traitsCompatible(a, b) {
-  const mainDiff = 0.15;
+  const mainDiff = 0.2;
   const greedDiff = Math.abs(a.greed - b.greed);
   const territorialDiff = Math.abs(a.territorial - b.territorial);
   const curiosityDiff = Math.abs(a.curiosity - b.curiosity);
