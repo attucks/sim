@@ -14,7 +14,7 @@
 // ===== Config (safe to tweak) =================================================
 const tileSize = 10;
 
-const AVOID_RADIUS = 8;             // was 10; slightly less "polite" to avoid over-steer
+const AVOID_RADIUS = 4;             // was 10; slightly less "polite" to avoid over-steer
 const SLIDE_CHECK_EPS = 0.0001;     // numerical guard
 const OBSTACLE_NEAR_DIST = 12;      // start damping speed near barriers
 const OBSTACLE_DAMP_MIN = 0.65;     // was 0.5; less harsh overall
