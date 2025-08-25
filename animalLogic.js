@@ -487,7 +487,7 @@ function decideMission(a) {
 
   // 6) Attack enemy if available
   if (a.enemies && a.enemies.length > 0) {
-    const nearEnemy = a.enemies.find(e => a.pos.dist(e.pos) < 80);
+    const nearEnemy = a.enemies.find(e => a.pos.dist(e.pos) < 180);
     if (nearEnemy && rand(1) < 0.7) {
       a.mission = { type: "attack", target: nearEnemy, timer: 0 };
       return;
@@ -661,7 +661,7 @@ onUpdate("animal", (a) => {
 
   // === Attack logic ==========================================================
   a.attackTimer = (a.attackTimer || 0) + dt();
-  if (a.mission.type === "attack" && a.mission.target && a.pos.dist(a.mission.target.pos) < 10) {
+  if (a.mission.type === "attack" && a.mission.target && a.pos.dist(a.mission.target.pos) < 20) {
     if (a.attackTimer >= a.attackCooldown) {
       a.attackTimer = 0;
 
