@@ -78,7 +78,16 @@ onCollide("animal", "animal", (a, b) => {
     }
   }
 });
+function updateHealth(x){
+if (x == 100){
+  return
+} else {
+  let diff = 100 - x
+  let output = 100 - (dif/2)
+  return output;
+}
 
+}
 onCollide("animal", "food", (a, f) => {
   if (!a.alive) return;
   destroy(f);
@@ -86,7 +95,7 @@ onCollide("animal", "food", (a, f) => {
   a.mode = "wander";
   a.target = null;
   a.stats.foods++;
-  a.health = 100
+  a.health = updateHealth(a.health)
 });
 
 
