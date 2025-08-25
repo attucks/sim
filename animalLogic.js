@@ -193,9 +193,11 @@ function findClosestEnemy(a) {
 
 // Keep your existing trait gating
 function traitsCompatible(a, b) {
+
   const greedDiff = Math.abs(a.greed - b.greed);
   const territorialDiff = Math.abs(a.territorial - b.territorial);
   const curiosityDiff = Math.abs(a.curiosity - b.curiosity);
+  console.log(greedDiff, territorialDiff, curiosityDiff)
   return greedDiff <= 1 && territorialDiff <= 1 && curiosityDiff <= 1;
 }
 
