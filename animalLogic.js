@@ -26,7 +26,7 @@ const NUDGE_TIME = 0.15;            // seconds to apply nudge
 // Per-mission speed multipliers (relative to animalSpeed)
 const SPEED_MULT = {
   eat: 18.5,
-  attack: 17.25,
+  attack: 17.35,
   flee: 17.2,
   patrol: 17.75,
   roam: 17.8,
@@ -683,7 +683,7 @@ if (a.mission?.type === "attack" && a.mission.target) {
     if (a.attackTimer >= a.attackCooldown) {
       a.attackTimer = 0;
 
-      if (rand(1) > 0.2) {
+      if (rand(1) > 0.1) {
         const damage = Math.floor(rand(5, 100));
         t.health = Math.max(0, (t.health ?? 0) - damage);
         showDamage(t);
