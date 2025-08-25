@@ -80,10 +80,10 @@ onCollide("animal", "animal", (a, b) => {
 });
 function updateHealth(x){
 if (x == 100){
-  return
+  return 100
 } else {
   let diff = 100 - x
-  let output = 100 - (dif/2)
+  let output = 100 - (diff/2)
   return output;
 }
 
