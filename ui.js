@@ -3,7 +3,7 @@
 // Also expects these globals from your sim: isPaused, simTick, simSkipFrames, spawnFoodInterval, spawnFood, spawnFoodAt, penX, penY, penWidth, penHeight, ancestorStats
 
 (() => {
-  const BUILD_VERSION = "4.07";
+  const BUILD_VERSION = "4.08";
   let sortKeyAlive = "kills";
   let sortDirAlive = -1; // 1 = asc, -1 = desc
   let sortKeyDead = "kills";
