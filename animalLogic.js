@@ -660,26 +660,61 @@ onUpdate("animal", (a) => {
   }
 
   // === Attack logic ==========================================================
-  a.attackTimer = (a.attackTimer || 0) + dt();
-  if (a.mission.type === "attack" && a.mission.target && a.pos.dist(a.mission.target.pos) < 5) {
+// ensure helpers exist somewhere near your init
+function ensureStats(animal) {
+  if (!animal.stats) animal.stats = { kills: 0, foods: 0 };
+  if (!Array.isArray(animal.victims)) animal.victims = [];
+}
+function fullName(a) { return `${a.firstName ?? ""} ${a.lastName ?? ""}`.trim(); }
+
+a.attackTimer = (a.attackTimer || 0) + dt();
+
+if (a.mission?.type === "attack" && a.mission.target) {
+  const t = a.mission.target;
+
+  // target may have died earlier this frame
+  if (!t.alive) {
+    a.mission = { type: "none", target: null, timer: 0 };
+    return;
+  }
+
+  // close enough to hit?
+  if (a.pos.dist(t.pos) < 5) {
     if (a.attackTimer >= a.attackCooldown) {
       a.attackTimer = 0;
 
       if (rand(1) > 0.2) {
-        const damage = rand(5, 100);
-        a.mission.target.health -= damage;
-        showDamage(a.mission.target);
-        addNews(`${a.firstName} hits ${a.mission.target.firstName} for ${Math.floor(damage)} damage!`);
+        const damage = Math.floor(rand(5, 100));
+        t.health = Math.max(0, (t.health ?? 0) - damage);
+        showDamage(t);
+        addNews?.(`${fullName(a)} hits ${t.firstName} for ${damage} damage!`);
 
-        if (a.mission.target.health <= 0) {
-          killAnimal(a.mission.target, "defeated");
+        if (t.health <= 0 && t.alive !== false) {
+          // credit killer before calling killAnimal
+          ensureStats(a);
+          const victimName = fullName(t);
+          a.stats.kills++;
+          a.victims.push(victimName);
+          t.killedBy = fullName(a);
+
+          addNews?.(`${fullName(a)} defeated ${t.firstName}! (Kills: ${a.stats.kills})`);
+
+          // call killAnimal with context if supported, else fallback to reason string
+          try {
+            killAnimal(t, { cause: "defeated", killer: a });
+          } catch {
+            killAnimal(t, "defeated");
+          }
+
           a.mission = { type: "none", target: null, timer: 0 };
         }
       } else {
-        addNews(`${a.firstName} missed ${a.mission.target.firstName}!`);
+        addNews?.(`${fullName(a)} missed ${a.mission.target.firstName}!`);
       }
     }
   }
+}
+
 
   // === Color feedback ========================================================
   const colorMultiplier =
