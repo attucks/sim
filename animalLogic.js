@@ -193,11 +193,11 @@ function findClosestEnemy(a) {
 
 // Keep your existing trait gating
 function traitsCompatible(a, b) {
-
+  const mainDiff = 0.05;
   const greedDiff = Math.abs(a.greed - b.greed);
   const territorialDiff = Math.abs(a.territorial - b.territorial);
   const curiosityDiff = Math.abs(a.curiosity - b.curiosity);
-  return greedDiff <= 0.01 && territorialDiff <= 0.01 && curiosityDiff <= 0.01;
+  return greedDiff <= mainDiff && territorialDiff <= mainDiff && curiosityDiff <= mainDiff;
 }
 
 // Upgraded: still populates the old familyAlliances object, but also
