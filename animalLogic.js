@@ -14,7 +14,7 @@
 // ===== Config (safe to tweak) ================================================
 const tileSize = 10;
 
-const AVOID_RADIUS = 2;             // personal space radius
+const AVOID_RADIUS = 4;             // personal space radius
 const SLIDE_CHECK_EPS = 0.0001;     // numerical guard
 const OBSTACLE_NEAR_DIST = 12;      // start damping speed near barriers
 const OBSTACLE_DAMP_MIN = 0.65;     // min damp factor near barriers
