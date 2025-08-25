@@ -661,7 +661,7 @@ onUpdate("animal", (a) => {
 
   // === Attack logic ==========================================================
   a.attackTimer = (a.attackTimer || 0) + dt();
-  if (a.mission.type === "attack" && a.mission.target && a.pos.dist(a.mission.target.pos) < 20) {
+  if (a.mission.type === "attack" && a.mission.target && a.pos.dist(a.mission.target.pos) < 5) {
     if (a.attackTimer >= a.attackCooldown) {
       a.attackTimer = 0;
 
